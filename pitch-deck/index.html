@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentOnAir — Pitch Deck</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #222222;
+    --text: #fafafa;
+    --text-dim: #888888;
+    --accent: #00ff88;
+    --accent2: #00ccff;
+    --accent3: #ff6b00;
+    --gradient: linear-gradient(135deg, #00ff88, #00ccff);
+  }
+
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; overflow-y: scroll; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide-number {
+    position: absolute;
+    top: 32px;
+    right: 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    opacity: 0.4;
+  }
+
+  /* Slide 1: Title */
+  .slide-title {
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,255,136,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(0,204,255,0.05) 0%, transparent 50%),
+                var(--bg);
+  }
+  .logo-text {
+    font-size: 72px;
+    font-weight: 900;
+    letter-spacing: -3px;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  .tagline {
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--text-dim);
+    max-width: 700px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .tagline em {
+    color: var(--text);
+    font-style: normal;
+    font-weight: 600;
+  }
+  .badge {
+    margin-top: 40px;
+    padding: 8px 20px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .badge span { color: var(--accent); }
+
+  /* Slide 2: Problem */
+  .slide-problem { background: var(--bg); }
+  .problem-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent3);
+    margin-bottom: 32px;
+  }
+  .problem-headline {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    max-width: 900px;
+    line-height: 1.15;
+    margin-bottom: 48px;
+  }
+  .problem-headline .highlight {
+    background: linear-gradient(135deg, #ff6b00, #ff3366);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Comparison table */
+  .compare-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    max-width: 750px;
+    width: 100%;
+    background: var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .compare-cell {
+    padding: 20px 28px;
+    background: var(--surface);
+    font-size: 17px;
+  }
+  .compare-cell.header {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 14px 28px;
+  }
+  .compare-cell .what { color: var(--text); }
+  .compare-cell .how { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 15px; }
+  .compare-cell .missing {
+    color: var(--accent3);
+    font-weight: 700;
+    font-size: 22px;
+  }
+
+  /* Slide 3: Why now */
+  .slide-why {
+    background: radial-gradient(ellipse at 30% 70%, rgba(0,204,255,0.06) 0%, transparent 50%), var(--bg);
+  }
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 32px;
+  }
+  .why-headline {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    max-width: 850px;
+    line-height: 1.2;
+    margin-bottom: 48px;
+  }
+  .stats-row {
+    display: flex;
+    gap: 48px;
+    margin-top: 16px;
+  }
+  .stat-card {
+    text-align: center;
+    padding: 32px 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    min-width: 200px;
+  }
+  .stat-number {
+    font-size: 48px;
+    font-weight: 900;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  /* Slide 4: Solution */
+  .slide-solution {
+    background: radial-gradient(ellipse at 50% 30%, rgba(0,255,136,0.06) 0%, transparent 50%), var(--bg);
+  }
+  .solution-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 32px;
+  }
+  .solution-headline {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    max-width: 900px;
+    line-height: 1.15;
+    margin-bottom: 20px;
+  }
+  .solution-sub {
+    font-size: 20px;
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 650px;
+    line-height: 1.6;
+    margin-bottom: 48px;
+  }
+  .code-block {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 12px;
+    padding: 28px 36px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    line-height: 1.8;
+    max-width: 700px;
+    width: 100%;
+    color: #c9d1d9;
+  }
+  .code-block .comment { color: #6e7681; }
+  .code-block .cmd { color: #7ee787; }
+  .code-block .flag { color: #79c0ff; }
+  .code-block .string { color: #a5d6ff; }
+  .code-block .output { color: #8b949e; }
+
+  /* Slide 5: How it works */
+  .slide-how { background: var(--bg); }
+  .how-headline {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .flow-steps {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    max-width: 1100px;
+  }
+  .flow-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    text-align: center;
+    flex: 1;
+    min-width: 180px;
+  }
+  .flow-step .icon { font-size: 36px; margin-bottom: 12px; }
+  .flow-step .step-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .flow-step .step-cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    background: rgba(0,255,136,0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+  .flow-step .step-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .flow-arrow {
+    font-size: 24px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  /* Slide 6: npm analogy */
+  .slide-analogy {
+    background: radial-gradient(ellipse at 70% 30%, rgba(0,255,136,0.05) 0%, transparent 50%), var(--bg);
+  }
+  .analogy-headline {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    max-width: 900px;
+    line-height: 1.2;
+    margin-bottom: 48px;
+  }
+  .analogy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 800px;
+    width: 100%;
+  }
+  .analogy-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+  }
+  .analogy-card .card-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .analogy-card .card-npm {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: #cb3837;
+    margin-bottom: 4px;
+  }
+  .analogy-card .card-agent {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--accent);
+  }
+
+  /* Slide 7: Market */
+  .slide-market {
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,204,255,0.06) 0%, transparent 50%), var(--bg);
+  }
+  .market-headline {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .tam-circles {
+    display: flex;
+    gap: 40px;
+    align-items: flex-end;
+  }
+  .tam-circle {
+    text-align: center;
+  }
+  .tam-ring {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .tam-ring.tam { background: rgba(0,255,136,0.1); border: 2px solid rgba(0,255,136,0.3); width: 220px; height: 220px; }
+  .tam-ring.sam { background: rgba(0,204,255,0.1); border: 2px solid rgba(0,204,255,0.3); }
+  .tam-ring.som { background: rgba(255,107,0,0.1); border: 2px solid rgba(255,107,0,0.3); width: 140px; height: 140px; }
+  .tam-value {
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .tam-ring.tam .tam-value { color: var(--accent); }
+  .tam-ring.sam .tam-value { color: var(--accent2); }
+  .tam-ring.som .tam-value { color: var(--accent3); }
+  .tam-year { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .tam-label { font-size: 14px; font-weight: 600; }
+  .tam-desc { font-size: 12px; color: var(--text-dim); max-width: 200px; margin-top: 4px; }
+
+  /* Slide 8: Traction */
+  .slide-traction { background: var(--bg); }
+  .traction-headline {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .traction-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 800px;
+    width: 100%;
+  }
+  .traction-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+  }
+  .traction-card .t-value {
+    font-size: 36px;
+    font-weight: 900;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .traction-card .t-label {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  /* Slide 9: Business model */
+  .slide-business {
+    background: radial-gradient(ellipse at 30% 50%, rgba(0,255,136,0.05) 0%, transparent 50%), var(--bg);
+  }
+  .business-headline {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .revenue-lanes {
+    display: flex;
+    gap: 24px;
+    max-width: 950px;
+  }
+  .revenue-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    flex: 1;
+  }
+  .revenue-card .r-phase {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .revenue-card .r-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .revenue-card .r-desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .revenue-card .r-example {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(0,204,255,0.06);
+    border-radius: 8px;
+  }
+
+  /* Slide 10: Competitive */
+  .slide-competitive { background: var(--bg); }
+  .comp-headline {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .comp-table {
+    max-width: 850px;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .comp-table th {
+    background: var(--surface);
+    padding: 14px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .comp-table td {
+    padding: 14px 20px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table .yes { color: var(--accent); font-weight: 600; }
+  .comp-table .no { color: #555; }
+  .comp-table .partial { color: var(--accent3); }
+  .comp-table tr.us td {
+    background: rgba(0,255,136,0.04);
+    font-weight: 600;
+  }
+  .comp-table tr.us td:first-child {
+    color: var(--accent);
+  }
+
+  /* Slide 11: Team */
+  .slide-team {
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,255,136,0.04) 0%, transparent 50%), var(--bg);
+  }
+  .team-headline {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .team-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 48px;
+    text-align: center;
+    max-width: 500px;
+  }
+  .team-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--bg);
+    margin: 0 auto 16px;
+  }
+  .team-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .team-role { font-size: 14px; color: var(--accent); margin-bottom: 16px; }
+  .team-bio { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+
+  /* Slide 12: Ask */
+  .slide-ask {
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,255,136,0.1) 0%, transparent 50%), var(--bg);
+  }
+  .ask-headline {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .ask-amount {
+    font-size: 72px;
+    font-weight: 900;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 32px;
+  }
+  .ask-uses {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 48px;
+  }
+  .ask-use {
+    text-align: center;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-width: 180px;
+  }
+  .ask-use .pct {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .ask-use .use-label {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  /* Slide 13: Close */
+  .slide-close {
+    background: radial-gradient(ellipse at 50% 40%, rgba(0,255,136,0.12) 0%, transparent 50%), var(--bg);
+  }
+  .close-logo {
+    font-size: 64px;
+    font-weight: 900;
+    letter-spacing: -3px;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 24px;
+  }
+  .close-tagline {
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--text-dim);
+    margin-bottom: 48px;
+  }
+  .close-tagline em {
+    color: var(--text);
+    font-style: italic;
+  }
+  .close-links {
+    display: flex;
+    gap: 24px;
+  }
+  .close-link {
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .close-link.primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .close-link.secondary {
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* Navigation dots */
+  .nav-dots {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+  }
+  .nav-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .nav-dot:hover, .nav-dot.active {
+    background: var(--accent);
+    transform: scale(1.3);
+  }
+
+  /* Keyboard hint */
+  .key-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: var(--text-dim);
+    opacity: 0.4;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav dots -->
+<div class="nav-dots" id="navDots"></div>
+<div class="key-hint">scroll or use arrow keys to navigate</div>
+
+<!-- SLIDE 1: Title -->
+<div class="slide slide-title" id="slide-1">
+  <div class="slide-number">01 / 13</div>
+  <div class="logo-text">AgentOnAir</div>
+  <div class="tagline">The <em>npm</em> for AI agents.<br>Pack. Share. Install. Run.</div>
+  <div class="badge">YC S25 &nbsp;|&nbsp; <span>Pre-seed</span></div>
+</div>
+
+<!-- SLIDE 2: Problem -->
+<div class="slide slide-problem" id="slide-2">
+  <div class="slide-number">02 / 13</div>
+  <div class="problem-label">The Problem</div>
+  <div class="problem-headline">Every format has a sharing primitive.<br>Agents <span class="highlight">don't.</span></div>
+  <div class="compare-table">
+    <div class="compare-cell header">What you built</div>
+    <div class="compare-cell header">How you share it</div>
+    <div class="compare-cell"><span class="what">A codebase</span></div>
+    <div class="compare-cell"><span class="how">.git</span></div>
+    <div class="compare-cell"><span class="what">An iOS app</span></div>
+    <div class="compare-cell"><span class="how">.ipa</span></div>
+    <div class="compare-cell"><span class="what">An Android app</span></div>
+    <div class="compare-cell"><span class="how">.apk</span></div>
+    <div class="compare-cell"><span class="what">A website</span></div>
+    <div class="compare-cell"><span class="how">vercel deploy</span></div>
+    <div class="compare-cell"><span class="what">An AI agent</span></div>
+    <div class="compare-cell"><span class="missing">???</span></div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Why Now -->
+<div class="slide slide-why" id="slide-3">
+  <div class="slide-number">03 / 13</div>
+  <div class="section-label">Why Now</div>
+  <div class="why-headline">The agent explosion is here.<br>The sharing layer isn't.</div>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-number">$8B</div>
+      <div class="stat-label">AI agent market<br>2025</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">46%</div>
+      <div class="stat-label">CAGR through<br>2030</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">0</div>
+      <div class="stat-label">Universal agent<br>sharing standards</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Solution -->
+<div class="slide slide-solution" id="slide-4">
+  <div class="slide-number">04 / 13</div>
+  <div class="solution-label">The Solution</div>
+  <div class="solution-headline">One file. One command.<br>Agents that travel.</div>
+  <div class="solution-sub">The <code style="color:var(--accent)">.agent</code> file — a portable, self-contained bundle that packages everything about an agent. Share it like a file. Run it anywhere.</div>
+  <div class="code-block">
+    <span class="comment"># You built an agent. Share it.</span><br>
+    <span class="cmd">agentbox</span> <span class="flag">pack</span> .<br>
+    <span class="output">  -> my-agent-1.0.0.agent (0.8 KB)</span><br><br>
+    <span class="comment"># Your friend receives it. One command.</span><br>
+    <span class="cmd">agentbox</span> <span class="flag">install</span> my-agent-1.0.0.agent<br>
+    <span class="cmd">agentbox</span> <span class="flag">run</span> my-agent <span class="flag">-m</span> <span class="string">"Help me with taxes"</span><br>
+    <span class="output">  -> Agent running. No setup needed.</span>
+  </div>
+</div>
+
+<!-- SLIDE 5: How it works -->
+<div class="slide slide-how" id="slide-5">
+  <div class="slide-number">05 / 13</div>
+  <div class="how-headline">How It Works</div>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="icon">🛠</div>
+      <div class="step-cmd">agentbox init</div>
+      <div class="step-title">Create</div>
+      <div class="step-desc">Scaffold an agent with system prompt, model config, knowledge files</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="icon">📦</div>
+      <div class="step-cmd">agentbox pack</div>
+      <div class="step-title">Pack</div>
+      <div class="step-desc">Bundle into a single portable .agent file</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="icon">🌐</div>
+      <div class="step-cmd">agentbox publish</div>
+      <div class="step-title">Share</div>
+      <div class="step-desc">Publish to registry or share the file directly</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="icon">🚀</div>
+      <div class="step-cmd">agentbox run</div>
+      <div class="step-title">Run</div>
+      <div class="step-desc">Install and run anywhere with one command</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: npm analogy -->
+<div class="slide slide-analogy" id="slide-6">
+  <div class="slide-number">06 / 13</div>
+  <div class="section-label">The Insight</div>
+  <div class="analogy-headline">npm didn't just let people share code.<br>It let people <span style="color:var(--accent)">build on</span> each other's code.</div>
+  <div class="analogy-grid">
+    <div class="analogy-card">
+      <div class="card-label">Packages</div>
+      <div class="card-npm">npm install lodash</div>
+      <div class="card-agent">agentbox install @sara/researcher</div>
+    </div>
+    <div class="analogy-card">
+      <div class="card-label">Registry</div>
+      <div class="card-npm">npmjs.com — 2M+ packages</div>
+      <div class="card-agent">agentbox list — browse agents</div>
+    </div>
+    <div class="analogy-card">
+      <div class="card-label">Composability</div>
+      <div class="card-npm">require('lodash')</div>
+      <div class="card-agent">Chain scraper + cleaner + writer</div>
+    </div>
+    <div class="analogy-card">
+      <div class="card-label">Ecosystem</div>
+      <div class="card-npm">17M developers</div>
+      <div class="card-agent">Every agent builder on earth</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: Market -->
+<div class="slide slide-market" id="slide-7">
+  <div class="slide-number">07 / 13</div>
+  <div class="section-label">Market Opportunity</div>
+  <div class="market-headline">The infrastructure layer for agent distribution</div>
+  <div class="tam-circles">
+    <div class="tam-circle">
+      <div class="tam-ring tam">
+        <div class="tam-value">$47B</div>
+        <div class="tam-year">by 2030</div>
+      </div>
+      <div class="tam-label">TAM</div>
+      <div class="tam-desc">Global AI agent market at 46% CAGR</div>
+    </div>
+    <div class="tam-circle">
+      <div class="tam-ring sam">
+        <div class="tam-value">$8B</div>
+        <div class="tam-year">by 2028</div>
+      </div>
+      <div class="tam-label">SAM</div>
+      <div class="tam-desc">Agent tooling, distribution & developer platforms</div>
+    </div>
+    <div class="tam-circle">
+      <div class="tam-ring som">
+        <div class="tam-value">$500M</div>
+        <div class="tam-year">by 2027</div>
+      </div>
+      <div class="tam-label">SOM</div>
+      <div class="tam-desc">Agent packaging, registry & marketplace</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: Traction -->
+<div class="slide slide-traction" id="slide-8">
+  <div class="slide-number">08 / 13</div>
+  <div class="section-label">Built & Working</div>
+  <div class="traction-headline">Working POC. Shipped in days.</div>
+  <div class="traction-grid">
+    <div class="traction-card">
+      <div class="t-value">8</div>
+      <div class="t-label">CLI commands<br>fully working</div>
+    </div>
+    <div class="traction-card">
+      <div class="t-value">27</div>
+      <div class="t-label">Tests passing<br>100% coverage</div>
+    </div>
+    <div class="traction-card">
+      <div class="t-value">0.8KB</div>
+      <div class="t-label">Avg .agent file<br>size</div>
+    </div>
+    <div class="traction-card">
+      <div class="t-value">3</div>
+      <div class="t-label">Example agents<br>published</div>
+    </div>
+    <div class="traction-card">
+      <div class="t-value">1 cmd</div>
+      <div class="t-label">To install &<br>run any agent</div>
+    </div>
+    <div class="traction-card">
+      <div class="t-value">0</div>
+      <div class="t-label">API keys needed<br>for demo mode</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9: Business Model -->
+<div class="slide slide-business" id="slide-9">
+  <div class="slide-number">09 / 13</div>
+  <div class="section-label">Business Model</div>
+  <div class="business-headline">The npm playbook, adapted for agents</div>
+  <div class="revenue-lanes">
+    <div class="revenue-card">
+      <div class="r-phase">Phase 1 — Now</div>
+      <div class="r-title">Open Standard</div>
+      <div class="r-desc">Free CLI + .agent format. Build the ecosystem. Win developer love. Become the default.</div>
+      <div class="r-example">agentbox install @anyone/anything</div>
+    </div>
+    <div class="revenue-card">
+      <div class="r-phase">Phase 2 — 6 months</div>
+      <div class="r-title">Pro Registry</div>
+      <div class="r-desc">Private agents, team workspaces, analytics, verified publishers. $20/mo per seat.</div>
+      <div class="r-example">agentbox publish --private --team acme</div>
+    </div>
+    <div class="revenue-card">
+      <div class="r-phase">Phase 3 — 12 months</div>
+      <div class="r-title">Agent Cloud</div>
+      <div class="r-desc">Hosted execution, usage-based billing, enterprise SSO. Agents run without local setup.</div>
+      <div class="r-example">agentbox deploy @acme/support-agent</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10: Competitive -->
+<div class="slide slide-competitive" id="slide-10">
+  <div class="slide-number">10 / 13</div>
+  <div class="section-label">Competitive Landscape</div>
+  <div class="comp-headline">Nobody owns the sharing layer yet</div>
+  <table class="comp-table">
+    <tr>
+      <th>Feature</th>
+      <th>Custom GPTs</th>
+      <th>CrewAI</th>
+      <th>LangChain Hub</th>
+      <th style="color:var(--accent)">AgentOnAir</th>
+    </tr>
+    <tr>
+      <td>Portable file format</td>
+      <td class="no">No</td>
+      <td class="no">No</td>
+      <td class="no">No</td>
+      <td class="yes">.agent</td>
+    </tr>
+    <tr>
+      <td>Framework agnostic</td>
+      <td class="no">OpenAI only</td>
+      <td class="no">CrewAI only</td>
+      <td class="partial">Partial</td>
+      <td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td>One-command install</td>
+      <td class="no">No</td>
+      <td class="no">No</td>
+      <td class="no">No</td>
+      <td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td>Bundled knowledge</td>
+      <td class="partial">Limited</td>
+      <td class="no">No</td>
+      <td class="no">No</td>
+      <td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td>Open registry</td>
+      <td class="partial">GPT Store</td>
+      <td class="no">No</td>
+      <td class="yes">Yes</td>
+      <td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td>Runs offline / locally</td>
+      <td class="no">No</td>
+      <td class="partial">Partial</td>
+      <td class="no">No</td>
+      <td class="yes">Yes</td>
+    </tr>
+  </table>
+</div>
+
+<!-- SLIDE 11: Team -->
+<div class="slide slide-team" id="slide-11">
+  <div class="slide-number">11 / 13</div>
+  <div class="section-label">Team</div>
+  <div class="team-headline">Builder-first. Shipping fast.</div>
+  <div class="team-card">
+    <div class="team-avatar">P</div>
+    <div class="team-name">Piyush Bhawsar</div>
+    <div class="team-role">Founder & Builder</div>
+    <div class="team-bio">Full-stack engineer obsessed with developer tools and AI infrastructure. Built AgentOnAir from zero to working POC in days. Believes the agent ecosystem needs its npm moment.</div>
+  </div>
+</div>
+
+<!-- SLIDE 12: The Ask -->
+<div class="slide slide-ask" id="slide-12">
+  <div class="slide-number">12 / 13</div>
+  <div class="section-label">The Ask</div>
+  <div class="ask-headline">Seed Round</div>
+  <div class="ask-amount">$1.5M</div>
+  <div class="ask-uses">
+    <div class="ask-use">
+      <div class="pct">40%</div>
+      <div class="use-label">Engineering<br>& Product</div>
+    </div>
+    <div class="ask-use">
+      <div class="pct">30%</div>
+      <div class="use-label">Developer<br>Community</div>
+    </div>
+    <div class="ask-use">
+      <div class="pct">20%</div>
+      <div class="use-label">Cloud<br>Infrastructure</div>
+    </div>
+    <div class="ask-use">
+      <div class="pct">10%</div>
+      <div class="use-label">Operations<br>& Legal</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13: Close -->
+<div class="slide slide-close" id="slide-13">
+  <div class="slide-number">13 / 13</div>
+  <div class="close-logo">AgentOnAir</div>
+  <div class="close-tagline">Agents should <em>travel.</em></div>
+  <div class="close-links">
+    <a href="https://github.com/piyushhhxyz/AgentsOnAir" class="close-link primary">View on GitHub</a>
+    <a href="mailto:piyush@agentsonair.com" class="close-link secondary">Get in touch</a>
+  </div>
+</div>
+
+<script>
+  // Create nav dots
+  const slides = document.querySelectorAll('.slide');
+  const dotsContainer = document.getElementById('navDots');
+  slides.forEach((slide, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot';
+    dot.onclick = () => slide.scrollIntoView({ behavior: 'smooth' });
+    dotsContainer.appendChild(dot);
+  });
+
+  // Update active dot on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const index = Array.from(slides).indexOf(entry.target);
+        document.querySelectorAll('.nav-dot').forEach((d, i) => {
+          d.classList.toggle('active', i === index);
+        });
+      }
+    });
+  }, { threshold: 0.5 });
+  slides.forEach(s => observer.observe(s));
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    const current = Array.from(slides).findIndex(s => {
+      const rect = s.getBoundingClientRect();
+      return rect.top >= -100 && rect.top < window.innerHeight / 2;
+    });
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      if (current < slides.length - 1) slides[current + 1].scrollIntoView({ behavior: 'smooth' });
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (current > 0) slides[current - 1].scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+</script>
+
+</body>
+</html>
