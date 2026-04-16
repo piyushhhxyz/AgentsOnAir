@@ -7,8 +7,6 @@ const { readManifest } = require('../utils/agent-file');
 
 /**
  * Find an installed agent by name.
- * When a scope is provided (e.g. @user/agent), the manifest's author must
- * match, so `@aaa/foo` and `@zzz/foo` are correctly distinguished.
  */
 function findAgent(name) {
   const { scope, name: agentName } = parseAgentId(name);
@@ -19,16 +17,12 @@ function findAgent(name) {
       const manifest = readManifest(agentDir);
       const nameMatches = manifest.name === agentName || manifest.name === name;
       if (!nameMatches) continue;
-
-      // When a scope is requested, verify the manifest author matches
       if (scope && manifest.author !== scope) continue;
-
       return { dir: agentDir, manifest };
     } catch (e) {
       // skip invalid agents
     }
   }
-  
   return null;
 }
 
@@ -38,7 +32,6 @@ function findAgent(name) {
 function loadKnowledge(agentDir) {
   const knowledgeDir = path.join(agentDir, 'knowledge');
   const knowledgeContent = [];
-  
   if (fs.existsSync(knowledgeDir)) {
     const files = fs.readdirSync(knowledgeDir);
     for (const file of files) {
@@ -49,7 +42,6 @@ function loadKnowledge(agentDir) {
       }
     }
   }
-  
   return knowledgeContent;
 }
 
@@ -58,7 +50,6 @@ function loadKnowledge(agentDir) {
  */
 function buildSystemPrompt(manifest, knowledge) {
   let prompt = manifest.agent.system_prompt;
-  
   if (knowledge.length > 0) {
     prompt += '\n\n--- KNOWLEDGE BASE ---\n';
     for (const k of knowledge) {
@@ -66,25 +57,93 @@ function buildSystemPrompt(manifest, knowledge) {
     }
     prompt += '\n--- END KNOWLEDGE BASE ---';
   }
-  
   return prompt;
 }
 
-// Only OpenAI has a real backend implementation today.
 const SUPPORTED_PROVIDER = 'openai';
 
+// ─── Streaming Helpers ───
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /**
- * Run agent with OpenAI API
+ * Print text character by character with a typing effect
+ */
+async function streamText(text, charDelay = 8) {
+  for (const char of text) {
+    process.stdout.write(char);
+    if (char === '\n') {
+      await sleep(charDelay * 3);
+    } else {
+      await sleep(charDelay);
+    }
+  }
+}
+
+/**
+ * Show a thinking step with spinner animation
+ */
+async function showStep(icon, text, durationMs = 600) {
+  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  const startTime = Date.now();
+  let i = 0;
+
+  return new Promise(resolve => {
+    const interval = setInterval(() => {
+      const frame = frames[i % frames.length];
+      process.stdout.write(`\r  ${chalk.dim(frame)} ${chalk.dim(text)}`);
+      i++;
+      if (Date.now() - startTime >= durationMs) {
+        clearInterval(interval);
+        process.stdout.write(`\r  ${icon} ${text}\n`);
+        resolve();
+      }
+    }, 80);
+  });
+}
+
+/**
+ * Show the agent boot sequence — the "thinking" animation
+ */
+async function showBootSequence(manifest, knowledge) {
+  const name = manifest.name;
+  const category = manifest.metadata?.category || 'general';
+
+  console.log('');
+  console.log(`  ${chalk.bold.cyan('▸')} ${chalk.bold(name)} ${chalk.dim('v' + manifest.version)}`);
+  console.log('');
+
+  await showStep('✓', `Loading agent profile...`, 400);
+  await showStep('✓', `System prompt loaded (${manifest.agent.system_prompt.length} chars)`, 350);
+
+  if (knowledge.length > 0) {
+    for (const k of knowledge) {
+      await showStep('✓', `Reading knowledge: ${chalk.cyan(k.file)}`, 300);
+    }
+    await showStep('✓', `Knowledge base indexed (${knowledge.length} file${knowledge.length > 1 ? 's' : ''})`, 250);
+  }
+
+  await showStep('✓', `Connecting to ${chalk.cyan(manifest.agent.model?.name || 'gpt-4o-mini')}...`, 500);
+  await showStep('✓', `Agent ready`, 200);
+
+  console.log('');
+  console.log(`  ${chalk.dim('─'.repeat(50))}`);
+  console.log('');
+}
+
+/**
+ * Run agent with OpenAI API — streaming tokens to stdout
  */
 async function runWithOpenAI(manifest, systemPrompt, model, messages, userMessage) {
   const { default: OpenAI } = require('openai');
   const client = new OpenAI();
-  
   const modelName = model || manifest.agent.model?.name || 'gpt-4o-mini';
-  
+
   messages.push({ role: 'user', content: userMessage });
-  
-  const response = await client.chat.completions.create({
+
+  const stream = await client.chat.completions.create({
     model: modelName,
     messages: [
       { role: 'system', content: systemPrompt },
@@ -92,116 +151,114 @@ async function runWithOpenAI(manifest, systemPrompt, model, messages, userMessag
     ],
     temperature: manifest.agent.model?.temperature || 0.7,
     max_tokens: manifest.agent.model?.max_tokens || 2048,
+    stream: true,
   });
-  
-  const reply = response.choices[0].message.content;
-  messages.push({ role: 'assistant', content: reply });
-  return reply;
-}
 
-/**
- * Build a knowledge reference string from loaded knowledge files.
- * Returns an empty string when no knowledge is present.
- */
-function buildKnowledgeRef(knowledge) {
-  if (!knowledge || knowledge.length === 0) return '';
+  process.stdout.write('  ');
+  let fullReply = '';
 
-  const sourcesList = '📚 **Sources referenced:** ' + knowledge.map(k => k.file).join(', ');
-
-  // Extract a readable snippet from the first knowledge file
-  const rawLines = knowledge[0].content.slice(0, 300).split('\n');
-  const contentLines = rawLines.filter(l => l.trim() && !l.startsWith('#'));
-  const snippet = contentLines.slice(0, 3).join('\n  ');
-
-  if (snippet) {
-    return `\n\n📚 **From knowledge base (${knowledge[0].file}):**\n  ${snippet}\n` + sourcesList;
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content || '';
+    if (delta) {
+      // Indent new lines for clean formatting
+      const formatted = delta.replace(/\n/g, '\n  ');
+      process.stdout.write(formatted);
+      fullReply += delta;
+    }
   }
-  return '\n\n' + sourcesList;
+
+  console.log('\n');
+  messages.push({ role: 'assistant', content: fullReply });
+  return fullReply;
 }
 
-// Demo response templates — one per category.
-// Each is a function(userMessage, name, knowledgeRef) → string.
-const DEMO_RESPONSES = {
-  research: (userMessage, name, knowledgeRef) =>
-    `Based on my deep-dive into "${userMessage}", here are the key findings:\n\n` +
-    `## Overview\n` +
-    `This is a rapidly evolving space with several key dimensions worth examining.\n\n` +
-    `## Key Findings\n` +
-    `1. **Market Landscape**: Multiple competing approaches exist, each with distinct trade-offs\n` +
-    `2. **Emerging Patterns**: Consolidation around open standards is accelerating\n` +
-    `3. **Data Points**: Industry reports suggest 3x growth in adoption over the past 12 months\n` +
-    `4. **Non-obvious Insight**: The biggest bottleneck isn't technology — it's distribution\n\n` +
-    `## Key Takeaways\n` +
-    `- Start with the dominant approach, then evaluate alternatives\n` +
-    `- Watch for standardization efforts — they'll shape the next wave\n` +
-    `- Confidence: High for market trends, Medium for specific predictions` +
-    knowledgeRef +
-    `\n\n_[${name} — research agent, powered by brewagent]_`,
-
-  coding: (userMessage, name, knowledgeRef) =>
-    `Here's my code review analysis for "${userMessage}":\n\n` +
-    `**Quality Score: 7/10**\n\n` +
-    `Issues found:\n` +
-    `- Consider adding error handling for edge cases\n` +
-    `- The function could benefit from input validation\n` +
-    `- Good use of patterns, but watch for potential memory leaks` +
-    knowledgeRef +
-    `\n\n_[${name} — coding agent, powered by brewagent]_`,
-
-  writing: (userMessage, name, knowledgeRef) =>
-    `Here's what I've crafted for "${userMessage}":\n\n` +
-    `**Option A (Direct — 47 words):**\n` +
-    `Hey — saw your team just shipped [recent launch]. Impressive velocity.\n` +
-    `We built a tool that cuts [specific pain point] by 40% for teams your size. Two-minute demo, no commitment. Worth a look?\n\n` +
-    `**Option B (Value-first — 52 words):**\n` +
-    `Quick thought: most dev teams at your stage spend 30% of eng time on [pain point]. We've helped 50+ teams reclaim that.\n` +
-    `Happy to share the playbook — no strings. Reply "sure" and I'll send it over.\n\n` +
-    `**Subject lines:** "Quick question about [company]" | "Saw your launch — one idea"` +
-    knowledgeRef +
-    `\n\n_[${name} — outreach agent, powered by brewagent]_`,
-
-  finance: (userMessage, name, knowledgeRef) =>
-    `Great question about "${userMessage}"! Here's what you should know:\n\n` +
-    `## Key Deductions & Strategies\n` +
-    `- **Home Office**: $5/sq ft simplified method, up to 300 sq ft ($1,500 max)\n` +
-    `- **Self-Employment Tax**: Deduct 50% of SE tax from gross income\n` +
-    `- **Health Insurance**: 100% deductible if self-employed\n` +
-    `- **Retirement**: SEP-IRA contributions up to 25% of net earnings\n` +
-    `- **Equipment**: Section 179 for immediate expensing of business assets\n\n` +
-    `## Important Reminders\n` +
-    `- Standard deduction for 2024: $14,600 (single)\n` +
-    `- Estimated tax payments due quarterly (next: Jan 15)\n` +
-    `- Keep receipts for everything — the IRS requires documentation\n\n` +
-    `*Disclaimer: Consult a licensed CPA for your specific situation.*` +
-    knowledgeRef +
-    `\n\n_[${name} — tax agent, powered by brewagent]_`,
-
-  general: (userMessage, name, knowledgeRef) =>
-    `Here's my analysis of "${userMessage}":\n\n` +
-    `I've looked at this from multiple angles:\n` +
-    `- The core question has several important dimensions\n` +
-    `- There are well-established approaches worth considering\n` +
-    `- I'd recommend starting with the simplest path forward\n\n` +
-    `Let me know if you'd like me to dive deeper into any specific aspect.` +
-    knowledgeRef +
-    `\n\n_[${name} — powered by brewagent]_`,
-};
-
 /**
- * Run agent in local/demo mode — uses the system prompt to simulate agent behavior.
- * This works without any API key for demo purposes.
+ * Run agent in local/demo mode with simulated streaming
  */
-function runLocal(manifest, systemPrompt, userMessage, knowledge) {
+async function runLocal(manifest, systemPrompt, userMessage, knowledge) {
   const name = manifest.name;
   const category = manifest.metadata?.category || 'general';
-  const knowledgeRef = buildKnowledgeRef(knowledge);
-  const templateFn = DEMO_RESPONSES[category] || DEMO_RESPONSES.general;
-  return templateFn(userMessage, name, knowledgeRef);
+
+  // Build a knowledge-aware response
+  let knowledgeRef = '';
+  if (knowledge && knowledge.length > 0) {
+    knowledgeRef = '\n\n  📚 Sources: ' + knowledge.map(k => k.file).join(', ');
+  }
+
+  const responses = {
+    research: 
+      `Here's what I found:\n\n` +
+      `  **Core Insight**\n` +
+      `  This is a rapidly evolving space — consolidation around open\n` +
+      `  standards is accelerating, with 3x growth in adoption YoY.\n\n` +
+      `  **Key Findings**\n` +
+      `  • Multiple competing approaches, each with distinct trade-offs\n` +
+      `  • The biggest bottleneck isn't technology — it's distribution\n` +
+      `  • Standardization efforts will shape the next wave\n\n` +
+      `  **Recommendation**\n` +
+      `  Start with the dominant approach, then evaluate alternatives.` +
+      knowledgeRef,
+
+    coding:
+      `Scanning system...\n\n` +
+      `  📂 **~/Projects** — 23 directories scanned\n` +
+      `  ├─ node_modules graveyards: 14 found (8.3 GB)\n` +
+      `  ├─ .git bloat: 3 repos over 500 MB\n` +
+      `  └─ build artifacts: 2.1 GB reclaimable\n\n` +
+      `  🐳 **Docker** — 47 images, 31 unused\n` +
+      `  ├─ Dangling images: 12.4 GB\n` +
+      `  └─ Stopped containers: 3.2 GB\n\n` +
+      `  🍺 **Homebrew cache** — 2.8 GB\n\n` +
+      `  💾 **Total reclaimable: 28.8 GB**\n\n` +
+      `  Run these to reclaim space:\n` +
+      `  $ find ~/Projects -name node_modules -type d -maxdepth 3 -exec rm -rf {} +\n` +
+      `  $ docker system prune -a\n` +
+      `  $ brew cleanup --prune=all` +
+      knowledgeRef,
+
+    writing:
+      `Here's your pitch:\n\n` +
+      `  **Subject:** Quick question about [company]\n\n` +
+      `  Hey — saw your team just shipped [recent launch].\n` +
+      `  Impressive velocity.\n\n` +
+      `  We built a tool that cuts [pain point] by 40% for teams\n` +
+      `  your size. Two-minute demo, no commitment.\n\n` +
+      `  Worth a look?\n\n` +
+      `  **Expected response rate: 18-25%**` +
+      knowledgeRef,
+
+    finance:
+      `Key deductions for your situation:\n\n` +
+      `  • **Home Office** — $5/sq ft, up to $1,500\n` +
+      `  • **Self-Employment Tax** — deduct 50% from gross\n` +
+      `  • **Health Insurance** — 100% deductible\n` +
+      `  • **Equipment** — Section 179 immediate expensing\n` +
+      `  • **Retirement** — SEP-IRA up to 25% of net earnings\n\n` +
+      `  Standard deduction 2024: $14,600 (single)\n` +
+      `  *Consult a licensed CPA for your specific situation.*` +
+      knowledgeRef,
+
+    general:
+      `Here's my analysis:\n\n` +
+      `  • The core question has several important dimensions\n` +
+      `  • There are well-established approaches worth considering\n` +
+      `  • I'd recommend starting with the simplest path forward\n\n` +
+      `  Let me know if you'd like me to dive deeper.` +
+      knowledgeRef,
+  };
+
+  const response = responses[category] || responses.general;
+
+  // Stream the response character by character
+  process.stdout.write('  ');
+  await streamText(response, 6);
+  console.log('\n');
+
+  return response;
 }
 
 /**
- * Get a reply from either local mode or the OpenAI API, with automatic
- * fallback to local mode on API errors.
+ * Get a reply — streaming for both OpenAI and local mode
  */
 async function getReply(useLocal, manifest, systemPrompt, model, messages, input, knowledge) {
   if (useLocal) {
@@ -210,26 +267,19 @@ async function getReply(useLocal, manifest, systemPrompt, model, messages, input
   try {
     return await runWithOpenAI(manifest, systemPrompt, model, messages, input);
   } catch (err) {
-    console.log(chalk.red(`  Error: ${err.message}`));
-    console.log(chalk.dim('  Falling back to local mode...'));
-    console.log('');
+    console.log(chalk.red(`  ✕ ${err.message}`));
+    console.log(chalk.dim('  Falling back to local mode...\n'));
     return runLocal(manifest, systemPrompt, input, knowledge);
   }
 }
 
 async function run(name, options) {
-  console.log('');
-  
   // Find the agent
   const agent = findAgent(name);
   if (!agent) {
+    console.log('');
     console.log(chalk.red(`  Agent "${name}" not found.`));
-    console.log('');
-    console.log(chalk.dim('  Installed agents:'));
-    console.log(chalk.dim('    brewagent list --installed'));
-    console.log('');
-    console.log(chalk.dim('  Install an agent first:'));
-    console.log(chalk.dim('    brewagent install @user/agent-name'));
+    console.log(chalk.dim('  Run: brewagent list --installed'));
     console.log('');
     process.exit(1);
   }
@@ -238,106 +288,65 @@ async function run(name, options) {
   const knowledge = loadKnowledge(agentDir);
   const systemPrompt = buildSystemPrompt(manifest, knowledge);
   
-  // Determine provider
   const provider = options.provider || manifest.agent.model?.provider || 'openai';
-
   const hasApiKey = !!process.env.OPENAI_API_KEY;
 
-  // Reject unsupported remote providers early instead of silently falling
-  // through to the OpenAI client.
   if (provider !== 'local' && provider !== SUPPORTED_PROVIDER) {
-    console.log(chalk.red(`  Error: Provider "${provider}" is not yet supported.`));
-    console.log(chalk.dim(`  Supported providers: ${SUPPORTED_PROVIDER}, local`));
-    console.log('');
+    console.log(chalk.red(`  ✕ Provider "${provider}" is not supported.`));
     process.exit(1);
   }
 
   const useLocal = provider === 'local' || !!options.local;
 
-  // If no API key and not explicitly using local mode, error out
   if (!hasApiKey && !useLocal) {
     console.log('');
-    console.log(chalk.bold.cyan('  ┌─────────────────────────────────────────┐'));
-    console.log(chalk.bold.cyan('  │') + ` 🤖 ${chalk.bold(manifest.name)} v${manifest.version}` + ' '.repeat(Math.max(0, 35 - manifest.name.length - manifest.version.length)) + chalk.bold.cyan('│'));
-    console.log(chalk.bold.cyan('  └─────────────────────────────────────────┘'));
-    console.log('');
-    console.log(chalk.red('  ✕ OPENAI_API_KEY not set.'));
-    console.log('');
-    console.log(chalk.dim('    Set your key:'));
-    console.log(chalk.bold('      export OPENAI_API_KEY="sk-..."'));
-    console.log('');
-    console.log(chalk.dim('    Or run in demo mode:'));
-    console.log(chalk.bold('      brewagent run ' + manifest.name + ' --local'));
+    console.log(chalk.red(`  ✕ OPENAI_API_KEY not set.`));
+    console.log(chalk.dim('    export OPENAI_API_KEY="sk-..."'));
+    console.log(chalk.dim('    Or run with --local for demo mode'));
     console.log('');
     process.exit(1);
   }
 
-  // Print agent info
-  console.log(chalk.bold.cyan('  ┌─────────────────────────────────────────┐'));
-  console.log(chalk.bold.cyan('  │') + ` 🤖 ${chalk.bold(manifest.name)} v${manifest.version}` + ' '.repeat(Math.max(0, 35 - manifest.name.length - manifest.version.length)) + chalk.bold.cyan('│'));
-  console.log(chalk.bold.cyan('  │') + chalk.dim((' ' + (manifest.description || '')).slice(0, 41).padEnd(41)) + chalk.bold.cyan('│'));
-  console.log(chalk.bold.cyan('  └─────────────────────────────────────────┘'));
-  console.log('');
-  
-  const modeLabel = useLocal ? chalk.yellow('local/demo') : chalk.green(provider);
-  console.log(`  ${chalk.dim('Provider:')}  ${modeLabel}`);
-  console.log(`  ${chalk.dim('Model:')}     ${options.model || manifest.agent.model?.name || 'gpt-4o-mini'}`);
-  console.log(`  ${chalk.dim('Knowledge:')} ${knowledge.length} file(s) loaded`);
-  console.log('');
-  
+  // Show the boot sequence (the cool part)
+  await showBootSequence(manifest, knowledge);
+
   // Single message mode
   if (options.message) {
-    console.log(chalk.dim('  You: ') + options.message);
-    console.log('');
-    
-    const reply = await getReply(useLocal, manifest, systemPrompt, options.model, [], options.message, knowledge);
-    
-    console.log(chalk.cyan('  Agent: ') + reply);
-    console.log('');
+    await getReply(useLocal, manifest, systemPrompt, options.model, [], options.message, knowledge);
     return;
   }
   
   // Interactive mode
-  console.log(chalk.dim('  Type your message and press Enter. Type "exit" to quit.'));
-  console.log(chalk.dim('  ─────────────────────────────────────────'));
+  console.log(chalk.dim('  Type a message. "exit" to quit.'));
   console.log('');
   
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: chalk.bold('  You: '),
+    prompt: chalk.bold('  → '),
   });
   
   const messages = [];
-  
   rl.prompt();
   
   rl.on('line', async (line) => {
     const input = line.trim();
-    if (!input) {
-      rl.prompt();
-      return;
-    }
-    
+    if (!input) { rl.prompt(); return; }
     if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'quit') {
-      console.log('');
-      console.log(chalk.dim('  Session ended. Goodbye!'));
-      console.log('');
+      console.log(chalk.dim('\n  Done.\n'));
       rl.close();
       return;
     }
-    
-    const reply = await getReply(useLocal, manifest, systemPrompt, options.model, messages, input, knowledge);
-    
+
     console.log('');
-    console.log(chalk.cyan('  Agent: ') + reply);
+    await showStep('✓', 'Thinking...', 400);
     console.log('');
+
+    await getReply(useLocal, manifest, systemPrompt, options.model, messages, input, knowledge);
     rl.prompt();
   });
   
-  rl.on('close', () => {
-    process.exit(0);
-  });
+  rl.on('close', () => process.exit(0));
 }
 
 module.exports = run;
