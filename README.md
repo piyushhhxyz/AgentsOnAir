@@ -7,25 +7,18 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/piyushhhxyz/AgentsOnAir.git
-cd AgentsOnAir
-npm install
-
-# Set up the CLI (pick one):
-npm link                                    # if you have write access to global node_modules
-# OR
-alias brewagent="node $(pwd)/src/cli.js"    # works everywhere (Nix, restricted envs, etc.)
+npm install -g brewagent
 
 # Pack an agent
-brewagent pack examples/startup-advisor
-# -> startup-advisor-1.0.0.agent (1.7 KB)
+brewagent pack examples/pitch
+# -> pitch.agent (2.6 KB)
 
 # Share the .agent file (AirDrop, Slack, email — however you want)
 
 # Install and run it
-brewagent install startup-advisor-1.0.0.agent
+brewagent install pitch.agent
 export OPENAI_API_KEY="your-key"   # optional — works without it in demo mode
-brewagent run startup-advisor -m "I'm building npm for AI agents"
+brewagent run pitch -m "https://github.com/piyushhhxyz/AgentsOnAir"
 ```
 
 ### All Commands
@@ -91,14 +84,14 @@ The registry is not a store. There are no purchases, no installs in the traditio
 
 ### What's in the registry
 
-| Agent | What it does |
-|---|---|
-| Research Assistant | Deep-dives any topic and returns structured, sourced answers |
-| Code Reviewer | Reads through code and explains issues clearly in plain language |
-| Data Analyst | Takes raw data and surfaces patterns, trends, and summaries |
-| Tweet Writer | Turns rough ideas into polished, high-engagement threads |
-| Meeting Summarizer | Converts transcripts and notes into clean, structured summaries |
-| SQL Debugger | Diagnoses broken queries and explains what went wrong |
+| Agent | File | What it does |
+|---|---|---|
+| pitch | `pitch.agent` | Analyzes any GitHub project and generates a killer 60-second pitch |
+| cleaner | `cleaner.agent` | Scans your Mac and finds what's eating your storage |
+| research | `research.agent` | Multi-agent LangGraph deep research with 4 coordinating agents |
+| outreach | `outreach.agent` | Cold VC outreach — researches investors and crafts fundraising emails |
+| cold-outreach | `cold-outreach.agent` | General cold outreach specialist for high-converting messages |
+| research-assistant | `research-assistant.agent` | Deep-dives any topic and returns structured, sourced answers |
 
 ---
 
