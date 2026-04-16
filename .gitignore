@@ -1,4 +1,4 @@
 node_modules/
 *.agent
-.agentbox/
+.brewagent/
 .generated_artifacts/
