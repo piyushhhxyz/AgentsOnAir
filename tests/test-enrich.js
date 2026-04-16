@@ -181,7 +181,7 @@ async function runAllTests() {
       { encoding: 'utf-8', env: { ...process.env, OPENAI_API_KEY: '' } }
     );
     assert(output.includes('📚'), 'Output should include knowledge reference emoji');
-    assert(output.includes('Sources referenced'), 'Output should include sources referenced');
+    assert(output.includes('Sources:'), 'Output should include sources');
   });
 
   test('run in local mode without knowledge does not show knowledge section', () => {
@@ -202,7 +202,7 @@ async function runAllTests() {
       `node ${cliPath} run plain-agent --local -m "Hello"`,
       { encoding: 'utf-8', env: { ...process.env, OPENAI_API_KEY: '' } }
     );
-    assert(!output.includes('Sources referenced'), 'Output should NOT include sources referenced when no knowledge');
+    assert(!output.includes('Sources:'), 'Output should NOT include sources when no knowledge');
   });
 
   printSummary();
