@@ -1,0 +1,29 @@
+// agentbox — the npm for AI agents
+// Programmatic API for using agentbox as a library
+
+const { readManifest, writeManifest, packAgent, unpackAgent, inspectAgent, validateManifest } = require('./utils/agent-file');
+const { parseAgentId, ensureDirs, listRegistryAgents, listInstalledAgents } = require('./utils/fs');
+const { AGENTBOX_HOME, REGISTRY_DIR, INSTALLED_DIR, AGENT_EXT, AGENT_MANIFEST } = require('./utils/constants');
+
+module.exports = {
+  // Core operations
+  readManifest,
+  writeManifest,
+  packAgent,
+  unpackAgent,
+  inspectAgent,
+  validateManifest,
+  
+  // Utilities
+  parseAgentId,
+  ensureDirs,
+  listRegistryAgents,
+  listInstalledAgents,
+  
+  // Constants
+  AGENTBOX_HOME,
+  REGISTRY_DIR,
+  INSTALLED_DIR,
+  AGENT_EXT,
+  AGENT_MANIFEST,
+};
