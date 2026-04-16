@@ -1,0 +1,24 @@
+{
+  "name": "agentbox",
+  "version": "0.1.0",
+  "description": "The npm for AI agents. Pack, share, install, and run AI agents with one command.",
+  "main": "src/index.js",
+  "bin": {
+    "agentbox": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node tests/test.js"
+  },
+  "keywords": ["ai", "agents", "package-manager", "sharing", "portable"],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "js-yaml": "^4.1.0",
+    "archiver": "^6.0.1",
+    "adm-zip": "^0.5.10",
+    "ora": "^5.4.1",
+    "inquirer": "^8.2.6",
+    "openai": "^4.20.0"
+  }
+}
