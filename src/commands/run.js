@@ -223,15 +223,18 @@ function getAgenticSteps(manifest, userMessage) {
     ];
   }
 
-  // startup-advisor: loads YC knowledge, analyzes market
-  if ((name === 'startup-advisor') || (msg.includes('startup') || msg.includes('idea') || msg.includes('yc'))) {
+  // vc-outreach: researches VCs, crafts personalized fundraising emails
+  if ((name === 'vc-outreach') || (msg.includes('vc') || msg.includes('investor') || msg.includes('fundrais'))) {
     return [
-      { type: 'thinking', text: 'Let me evaluate this from a YC partner perspective...' },
-      { type: 'tool', name: 'knowledge.search', args: '"yc-advice.md"', result: 'Paul Graham essays loaded, common mistakes indexed', duration: 900 },
-      { type: 'tool', name: 'market.analyze', args: `"${userMessage.slice(0, 40)}..."`, result: 'Market size estimated, competitor landscape mapped', duration: 1300 },
-      { type: 'thinking', text: 'Checking against common YC rejection patterns...' },
-      { type: 'tool', name: 'knowledge.search', args: '"fundable-idea-criteria"', result: '12 criteria loaded, scoring against submission', duration: 800 },
-      { type: 'step', icon: '✓', text: 'Analysis complete — delivering feedback' },
+      { type: 'thinking', text: 'Researching target investor profile and thesis...' },
+      { type: 'tool', name: 'vc.research_profile', args: '"target investor"', result: 'Investment thesis loaded, 12 recent deals indexed', duration: 1400 },
+      { type: 'tool', name: 'vc.scan_portfolio', args: '"portfolio companies"', result: '3 portfolio synergies identified', duration: 1100 },
+      { type: 'tool', name: 'knowledge.search', args: '"vc-landscape.md"', result: 'Tier 1 firms loaded, thesis alignment scored', duration: 800 },
+      { type: 'thinking', text: 'Finding connection angles — recent tweets, talks, blog posts...' },
+      { type: 'tool', name: 'social.scan_activity', args: '"last 30 days"', result: '2 relevant tweets, 1 podcast appearance found', duration: 1300 },
+      { type: 'tool', name: 'knowledge.search', args: '"outreach-playbook.md"', result: '4-line framework loaded, follow-up sequence ready', duration: 700 },
+      { type: 'thinking', text: 'Crafting 3 email variants — warm intro substitute, portfolio synergy, contrarian bet...' },
+      { type: 'step', icon: '✓', text: 'VC research complete — generating outreach emails' },
     ];
   }
 
