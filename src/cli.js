@@ -73,6 +73,8 @@ program
 program
   .command('setup')
   .description('Configure brewagent (API keys, author name)')
+  .option('-k, --key <key>', 'OpenAI API key')
+  .option('-a, --author <name>', 'Default author name')
   .action(setupCmd);
 
 // Banner — box width is computed dynamically so the right border stays

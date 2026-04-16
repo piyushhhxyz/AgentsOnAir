@@ -14,7 +14,7 @@ function prompt(question) {
   });
 }
 
-async function setup() {
+async function setup(options) {
   const configPath = path.join(BREWAGENT_HOME, 'config.json');
   fs.mkdirSync(BREWAGENT_HOME, { recursive: true });
 
@@ -24,6 +24,21 @@ async function setup() {
     try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
   }
 
+  // Non-interactive mode: flags provided directly
+  if (options.key || options.author) {
+    if (options.key) config.openai_api_key = options.key;
+    if (options.author) config.default_author = options.author;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+    console.log('');
+    console.log(chalk.green('  ✓ Config saved!'));
+    if (options.key) console.log(chalk.green('  ✓') + ' OpenAI API Key: configured');
+    if (options.author) console.log(chalk.green('  ✓') + ` Author: ${options.author}`);
+    console.log('');
+    return;
+  }
+
+  // Interactive mode
   console.log('');
   console.log(chalk.bold('  🤖 brewagent setup'));
   console.log(chalk.dim('  ─────────────────────────────────'));
