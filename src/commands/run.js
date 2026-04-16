@@ -83,9 +83,15 @@ async function streamText(text, charDelay = 8) {
 }
 
 /**
- * Show a thinking step with spinner animation
+ * Show a thinking step with spinner animation.
+ * Falls back to a simple print in non-TTY environments (CI, piped output, tests).
  */
 async function showStep(icon, text, durationMs = 600) {
+  if (!process.stdout.isTTY) {
+    console.log(`  ${icon} ${text}`);
+    return;
+  }
+
   const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
   const startTime = Date.now();
   let i = 0;
@@ -157,14 +163,19 @@ async function runWithOpenAI(manifest, systemPrompt, model, messages, userMessag
   process.stdout.write('  ');
   let fullReply = '';
 
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content || '';
-    if (delta) {
-      // Indent new lines for clean formatting
-      const formatted = delta.replace(/\n/g, '\n  ');
-      process.stdout.write(formatted);
-      fullReply += delta;
+  try {
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content || '';
+      if (delta) {
+        const formatted = delta.replace(/\n/g, '\n  ');
+        process.stdout.write(formatted);
+        fullReply += delta;
+      }
     }
+  } catch (streamErr) {
+    // Clean up partial output before re-throwing
+    console.log('');
+    throw streamErr;
   }
 
   console.log('\n');
