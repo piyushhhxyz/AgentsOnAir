@@ -1,4 +1,4 @@
-name: "cleanmymac"
+name: "cleaner"
 version: "1.0.0"
 description: "AI system optimizer — scans your machine, finds bloat, reclaims storage & speed"
 author: "piyush"

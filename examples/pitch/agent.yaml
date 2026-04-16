@@ -1,4 +1,4 @@
-name: "pitchdeck-ai"
+name: "pitch"
 version: "1.0.0"
 description: "Analyzes any GitHub project and generates an electric 60-second pitch"
 author: "piyush"

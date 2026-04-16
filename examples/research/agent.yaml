@@ -1,4 +1,4 @@
-name: "deepresearch"
+name: "research"
 version: "1.0.0"
 description: "Multi-agent deep research system powered by LangGraph — orchestrates planner, researcher, analyst, and writer agents"
 author: "piyush"

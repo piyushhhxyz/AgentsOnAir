@@ -268,7 +268,7 @@ async function runAllTests() {
     execSync(`node ${cliPath} init packable-agent`, { cwd: initDir, encoding: 'utf-8' });
     execSync(`node ${cliPath} pack packable-agent`, { cwd: initDir, encoding: 'utf-8' });
 
-    const agentFile = path.join(initDir, 'packable-agent-1.0.0.agent');
+    const agentFile = path.join(initDir, 'packable-agent.agent');
     assert(fs.existsSync(agentFile), '.agent file should be created');
     const stats = fs.statSync(agentFile);
     assert(stats.size > 0, '.agent file should have content');
@@ -292,7 +292,7 @@ async function runAllTests() {
 
     // Pack
     execSync(`node ${cliPath} pack e2e-agent`, { cwd: workDir, encoding: 'utf-8' });
-    const agentFile = path.join(workDir, 'e2e-agent-1.0.0.agent');
+    const agentFile = path.join(workDir, 'e2e-agent.agent');
     assert(fs.existsSync(agentFile), 'Pack should create .agent file');
 
     // Install from file
