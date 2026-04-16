@@ -252,17 +252,15 @@ async function run(name, options) {
     process.exit(1);
   }
 
-  const useLocal = provider === 'local' || options.local || (!hasApiKey && provider === SUPPORTED_PROVIDER);
-  
-  // Print agent info
-  console.log(chalk.bold.cyan('  ┌─────────────────────────────────────────┐'));
-  console.log(chalk.bold.cyan('  │') + ` 🤖 ${chalk.bold(manifest.name)} v${manifest.version}` + ' '.repeat(Math.max(0, 35 - manifest.name.length - manifest.version.length)) + chalk.bold.cyan('│'));
-  console.log(chalk.bold.cyan('  │') + chalk.dim((' ' + (manifest.description || '')).slice(0, 41).padEnd(41)) + chalk.bold.cyan('│'));
-  console.log(chalk.bold.cyan('  └─────────────────────────────────────────┘'));
-  console.log('');
-  
+  const useLocal = provider === 'local' || !!options.local;
+
   // If no API key and not explicitly using local mode, error out
-  if (!hasApiKey && !options.local && provider !== 'local') {
+  if (!hasApiKey && !useLocal) {
+    console.log('');
+    console.log(chalk.bold.cyan('  ┌─────────────────────────────────────────┐'));
+    console.log(chalk.bold.cyan('  │') + ` 🤖 ${chalk.bold(manifest.name)} v${manifest.version}` + ' '.repeat(Math.max(0, 35 - manifest.name.length - manifest.version.length)) + chalk.bold.cyan('│'));
+    console.log(chalk.bold.cyan('  └─────────────────────────────────────────┘'));
+    console.log('');
     console.log(chalk.red('  ✕ OPENAI_API_KEY not set.'));
     console.log('');
     console.log(chalk.dim('    Set your key:'));
@@ -273,6 +271,13 @@ async function run(name, options) {
     console.log('');
     process.exit(1);
   }
+
+  // Print agent info
+  console.log(chalk.bold.cyan('  ┌─────────────────────────────────────────┐'));
+  console.log(chalk.bold.cyan('  │') + ` 🤖 ${chalk.bold(manifest.name)} v${manifest.version}` + ' '.repeat(Math.max(0, 35 - manifest.name.length - manifest.version.length)) + chalk.bold.cyan('│'));
+  console.log(chalk.bold.cyan('  │') + chalk.dim((' ' + (manifest.description || '')).slice(0, 41).padEnd(41)) + chalk.bold.cyan('│'));
+  console.log(chalk.bold.cyan('  └─────────────────────────────────────────┘'));
+  console.log('');
   
   const modeLabel = useLocal ? chalk.yellow('local/demo') : chalk.green(provider);
   console.log(`  ${chalk.dim('Provider:')}  ${modeLabel}`);
