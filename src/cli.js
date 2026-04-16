@@ -12,6 +12,7 @@ const publishCmd = require('./commands/publish');
 const listCmd = require('./commands/list');
 const inspectCmd = require('./commands/inspect');
 const registryCmd = require('./commands/registry');
+const setupCmd = require('./commands/setup');
 
 const program = new Command();
 
@@ -68,6 +69,11 @@ program
   .command('registry')
   .description('Show registry info and stats')
   .action(registryCmd);
+
+program
+  .command('setup')
+  .description('Configure brewagent (API keys, author name)')
+  .action(setupCmd);
 
 // Banner — box width is computed dynamically so the right border stays
 // aligned regardless of version string length (e.g. 0.1.0 vs 0.10.0).

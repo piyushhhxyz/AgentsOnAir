@@ -103,7 +103,14 @@ async function init(name, options) {
     name: agentName,
     version: '1.0.0',
     description: `A ${template} AI agent`,
-    author: process.env.USER || 'anonymous',
+    author: (() => {
+      const { BREWAGENT_HOME } = require('../utils/constants');
+      try {
+        const config = JSON.parse(fs.readFileSync(path.join(BREWAGENT_HOME, 'config.json'), 'utf8'));
+        if (config.default_author) return config.default_author;
+      } catch {}
+      return process.env.USER || 'anonymous';
+    })(),
     agent: {
       system_prompt: tmpl.system_prompt,
       model: {

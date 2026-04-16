@@ -240,6 +240,18 @@ async function run(name, options) {
   
   // Determine provider
   const provider = options.provider || manifest.agent.model?.provider || 'openai';
+
+  // Load API key: env var takes priority, then config file from `brewagent setup`
+  if (!process.env.OPENAI_API_KEY) {
+    const { BREWAGENT_HOME } = require('../utils/constants');
+    const configPath = path.join(BREWAGENT_HOME, 'config.json');
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (config.openai_api_key) {
+        process.env.OPENAI_API_KEY = config.openai_api_key;
+      }
+    } catch {}
+  }
   const hasApiKey = !!process.env.OPENAI_API_KEY;
 
   // Reject unsupported remote providers early instead of silently falling
@@ -261,8 +273,8 @@ async function run(name, options) {
   console.log('');
   
   if (useLocal && provider !== 'local') {
-    console.log(chalk.yellow('  ⚠ No OPENAI_API_KEY found. Running in local demo mode.'));
-    console.log(chalk.dim('    Set OPENAI_API_KEY to use the full LLM-powered agent.'));
+    console.log(chalk.yellow('  ⚠ No API key found. Running in local demo mode.'));
+    console.log(chalk.dim('    Run `brewagent setup` to configure your OpenAI key.'));
     console.log('');
   }
   
