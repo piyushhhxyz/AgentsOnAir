@@ -177,7 +177,7 @@ async function runAllTests() {
 
     // Run with a message (local mode — no OPENAI_API_KEY)
     const output = execSync(
-      `node ${cliPath} run knowledge-agent -m "Tell me about AI"`,
+      `node ${cliPath} run knowledge-agent --local -m "Tell me about AI"`,
       { encoding: 'utf-8', env: { ...process.env, OPENAI_API_KEY: '' } }
     );
     assert(output.includes('📚'), 'Output should include knowledge reference emoji');
@@ -199,7 +199,7 @@ async function runAllTests() {
 
     // Run with a message (local mode)
     const output = execSync(
-      `node ${cliPath} run plain-agent -m "Hello"`,
+      `node ${cliPath} run plain-agent --local -m "Hello"`,
       { encoding: 'utf-8', env: { ...process.env, OPENAI_API_KEY: '' } }
     );
     assert(!output.includes('Sources referenced'), 'Output should NOT include sources referenced when no knowledge');

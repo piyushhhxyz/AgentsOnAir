@@ -24,16 +24,14 @@ async function setup(options) {
     try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
   }
 
-  // Non-interactive mode: flags provided directly
-  if (options.key || options.author) {
-    if (options.key) config.openai_api_key = options.key;
-    if (options.author) config.default_author = options.author;
+  // Non-interactive mode: flag provided directly
+  if (options.author) {
+    config.default_author = options.author;
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
     console.log('');
     console.log(chalk.green('  ✓ Config saved!'));
-    if (options.key) console.log(chalk.green('  ✓') + ' OpenAI API Key: configured');
-    if (options.author) console.log(chalk.green('  ✓') + ` Author: ${options.author}`);
+    console.log(chalk.green('  ✓') + ` Author: ${options.author}`);
     console.log('');
     return;
   }
@@ -45,14 +43,6 @@ async function setup(options) {
   console.log('');
   console.log(chalk.dim('  Configure brewagent for first use.'));
   console.log(chalk.dim('  Press Enter to keep existing values.\n'));
-
-  // OpenAI API Key
-  const currentKey = config.openai_api_key || process.env.OPENAI_API_KEY || '';
-  const maskedKey = currentKey ? currentKey.slice(0, 8) + '...' + currentKey.slice(-4) : 'not set';
-  const newKey = await prompt(chalk.bold(`  OpenAI API Key `) + chalk.dim(`[${maskedKey}]: `));
-  if (newKey) {
-    config.openai_api_key = newKey;
-  }
 
   // Default author name
   const currentAuthor = config.default_author || '';
@@ -69,9 +59,9 @@ async function setup(options) {
   console.log('');
 
   // Show status
-  const hasKey = !!(config.openai_api_key || process.env.OPENAI_API_KEY);
+  const hasKey = !!process.env.OPENAI_API_KEY;
   console.log(chalk.bold('  Status:'));
-  console.log(`  ${hasKey ? chalk.green('✓') : chalk.yellow('⚠')} OpenAI API Key: ${hasKey ? chalk.green('configured') : chalk.yellow('not set (demo mode only)')}`);
+  console.log(`  ${hasKey ? chalk.green('✓') : chalk.yellow('⚠')} OpenAI API Key: ${hasKey ? chalk.green('set via environment') : chalk.yellow('not set — run: export OPENAI_API_KEY="sk-..."')}`);
   console.log(`  ${config.default_author ? chalk.green('✓') : chalk.dim('○')} Author: ${config.default_author || chalk.dim('not set')}`);
   console.log('');
   console.log(chalk.dim('  You\'re all set! Try:'));

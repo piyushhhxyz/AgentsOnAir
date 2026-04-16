@@ -241,17 +241,6 @@ async function run(name, options) {
   // Determine provider
   const provider = options.provider || manifest.agent.model?.provider || 'openai';
 
-  // Load API key: env var takes priority, then config file from `brewagent setup`
-  if (!process.env.OPENAI_API_KEY) {
-    const { BREWAGENT_HOME } = require('../utils/constants');
-    const configPath = path.join(BREWAGENT_HOME, 'config.json');
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      if (config.openai_api_key) {
-        process.env.OPENAI_API_KEY = config.openai_api_key;
-      }
-    } catch {}
-  }
   const hasApiKey = !!process.env.OPENAI_API_KEY;
 
   // Reject unsupported remote providers early instead of silently falling
@@ -263,7 +252,7 @@ async function run(name, options) {
     process.exit(1);
   }
 
-  const useLocal = provider === 'local' || (!hasApiKey && provider === SUPPORTED_PROVIDER);
+  const useLocal = provider === 'local' || options.local || (!hasApiKey && provider === SUPPORTED_PROVIDER);
   
   // Print agent info
   console.log(chalk.bold.cyan('  ┌─────────────────────────────────────────┐'));
@@ -272,10 +261,17 @@ async function run(name, options) {
   console.log(chalk.bold.cyan('  └─────────────────────────────────────────┘'));
   console.log('');
   
-  if (useLocal && provider !== 'local') {
-    console.log(chalk.yellow('  ⚠ No API key found. Running in local demo mode.'));
-    console.log(chalk.dim('    Run `brewagent setup` to configure your OpenAI key.'));
+  // If no API key and not explicitly using local mode, error out
+  if (!hasApiKey && !options.local && provider !== 'local') {
+    console.log(chalk.red('  ✕ OPENAI_API_KEY not set.'));
     console.log('');
+    console.log(chalk.dim('    Set your key:'));
+    console.log(chalk.bold('      export OPENAI_API_KEY="sk-..."'));
+    console.log('');
+    console.log(chalk.dim('    Or run in demo mode:'));
+    console.log(chalk.bold('      brewagent run ' + manifest.name + ' --local'));
+    console.log('');
+    process.exit(1);
   }
   
   const modeLabel = useLocal ? chalk.yellow('local/demo') : chalk.green(provider);

@@ -46,6 +46,7 @@ program
   .option('-i, --interactive', 'Run in interactive mode', false)
   .option('--model <model>', 'Override the LLM model')
   .option('--provider <provider>', 'Override the LLM provider (openai, anthropic, ollama)')
+  .option('--local', 'Run in local demo mode (no API key needed)')
   .action(runCmd);
 
 program
@@ -72,8 +73,7 @@ program
 
 program
   .command('setup')
-  .description('Configure brewagent (API keys, author name)')
-  .option('-k, --key <key>', 'OpenAI API key')
+  .description('Configure brewagent (author name)')
   .option('-a, --author <name>', 'Default author name')
   .action(setupCmd);
 
