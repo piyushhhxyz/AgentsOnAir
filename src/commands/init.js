@@ -143,15 +143,15 @@ async function init(name, options) {
 
 \`\`\`bash
 # Pack this agent
-agentbox pack .
+brewagent pack .
 
 # Run this agent
-agentbox run ${agentName}
+brewagent run ${agentName}
 \`\`\`
 
 ## About
 
-Created with [agentbox](https://github.com/piyushhhxyz/AgentsOnAir) — the npm for AI agents.
+Created with [brewagent](https://github.com/piyushhhxyz/AgentsOnAir) — the npm for AI agents.
 `);
   
   // Write .gitignore
@@ -171,8 +171,8 @@ Created with [agentbox](https://github.com/piyushhhxyz/AgentsOnAir) — the npm 
   console.log('');
   console.log(chalk.dim('  Next steps:'));
   console.log(`    cd ${agentName}`);
-  console.log(`    ${chalk.cyan('agentbox pack .')}        # Create .agent file`);
-  console.log(`    ${chalk.cyan('agentbox publish .')}     # Publish to registry`);
+  console.log(`    ${chalk.cyan('brewagent pack .')}        # Create .agent file`);
+  console.log(`    ${chalk.cyan('brewagent publish .')}     # Publish to registry`);
   console.log('');
 }
 

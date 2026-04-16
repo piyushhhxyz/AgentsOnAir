@@ -16,8 +16,8 @@ const registryCmd = require('./commands/registry');
 const program = new Command();
 
 program
-  .name('agentbox')
-  .description(chalk.bold('agentbox') + ' — the npm for AI agents. Pack, share, install, run.')
+  .name('brewagent')
+  .description(chalk.bold('brewagent') + ' — the npm for AI agents. Pack, share, install, run.')
   .version(pkg.version);
 
 program
@@ -77,7 +77,7 @@ if (process.argv.length <= 2) {
   const border = '═'.repeat(BOX_INNER);
   console.log('');
   console.log(chalk.bold.cyan(`  ╔${border}╗`));
-  console.log(chalk.bold.cyan('  ║') + chalk.bold(pad(`   🤖 agentbox v${pkg.version}`)) + chalk.bold.cyan('║'));
+  console.log(chalk.bold.cyan('  ║') + chalk.bold(pad(`   🤖 brewagent v${pkg.version}`)) + chalk.bold.cyan('║'));
   console.log(chalk.bold.cyan('  ║') + pad('   The npm for AI agents.') + chalk.bold.cyan('║'));
   console.log(chalk.bold.cyan('  ║') + pad('   Pack. Share. Install. Run.') + chalk.bold.cyan('║'));
   console.log(chalk.bold.cyan(`  ╚${border}╝`));

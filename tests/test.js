@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Unit tests for agentbox core functionality
+// Unit tests for brewagent core functionality
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -14,7 +14,7 @@ const { readManifest, readAndValidateManifest, writeManifest, packAgent, unpackA
 const { sanitizeManifestField } = require('../src/utils/validate');
 
 async function runAllTests() {
-  console.log('\n\x1b[1m  agentbox unit tests\x1b[0m\n');
+  console.log('\n\x1b[1m  brewagent unit tests\x1b[0m\n');
 
   // ─── parseAgentId ───
   console.log('  \x1b[36mparseAgentId\x1b[0m');
@@ -42,11 +42,11 @@ async function runAllTests() {
   // ─── ensureDirs ───
   console.log('\n  \x1b[36mensureDirs\x1b[0m');
 
-  test('creates agentbox directories', () => {
+  test('creates brewagent directories', () => {
     ensureDirs();
-    assert(fs.existsSync(path.join(tmpDir, '.agentbox')), 'AGENTBOX_HOME should exist');
-    assert(fs.existsSync(path.join(tmpDir, '.agentbox', 'registry')), 'REGISTRY_DIR should exist');
-    assert(fs.existsSync(path.join(tmpDir, '.agentbox', 'agents')), 'INSTALLED_DIR should exist');
+    assert(fs.existsSync(path.join(tmpDir, '.brewagent')), 'BREWAGENT_HOME should exist');
+    assert(fs.existsSync(path.join(tmpDir, '.brewagent', 'registry')), 'REGISTRY_DIR should exist');
+    assert(fs.existsSync(path.join(tmpDir, '.brewagent', 'agents')), 'INSTALLED_DIR should exist');
   });
 
   // ─── validateManifest ───
@@ -224,12 +224,12 @@ async function runAllTests() {
   // ─── CLI integration tests ───
   console.log('\n  \x1b[36mCLI integration\x1b[0m');
 
-  test('agentbox --version outputs version', () => {
+  test('brewagent --version outputs version', () => {
     const output = execSync(`node ${cliPath} --version`, { encoding: 'utf-8' }).trim();
     assert(output.match(/^\d+\.\d+\.\d+$/), `Expected version string, got: ${output}`);
   });
 
-  test('agentbox --help shows commands', () => {
+  test('brewagent --help shows commands', () => {
     const output = execSync(`node ${cliPath} --help`, { encoding: 'utf-8' });
     assert(output.includes('init'), 'Should list init command');
     assert(output.includes('pack'), 'Should list pack command');
@@ -239,7 +239,7 @@ async function runAllTests() {
     assert(output.includes('list'), 'Should list list command');
   });
 
-  test('agentbox init creates agent directory', () => {
+  test('brewagent init creates agent directory', () => {
     const initDir = path.join(tmpDir, 'cli-test');
     fs.mkdirSync(initDir, { recursive: true });
     execSync(`node ${cliPath} init test-cli-agent`, { cwd: initDir, encoding: 'utf-8' });
@@ -252,7 +252,7 @@ async function runAllTests() {
     assert(fs.existsSync(path.join(agentDir, 'README.md')), 'README.md should exist');
   });
 
-  test('agentbox init with template sets correct category', () => {
+  test('brewagent init with template sets correct category', () => {
     const initDir = path.join(tmpDir, 'cli-test-tmpl');
     fs.mkdirSync(initDir, { recursive: true });
     execSync(`node ${cliPath} init research-agent --template research`, { cwd: initDir, encoding: 'utf-8' });
@@ -262,7 +262,7 @@ async function runAllTests() {
     assert(manifest.agent.system_prompt.includes('research'), 'Should have research prompt');
   });
 
-  test('agentbox pack creates .agent file from CLI', () => {
+  test('brewagent pack creates .agent file from CLI', () => {
     const initDir = path.join(tmpDir, 'cli-test-pack');
     fs.mkdirSync(initDir, { recursive: true });
     execSync(`node ${cliPath} init packable-agent`, { cwd: initDir, encoding: 'utf-8' });
@@ -278,10 +278,10 @@ async function runAllTests() {
   console.log('\n  \x1b[36mEnd-to-end flow\x1b[0m');
 
   test('full flow: init -> pack -> install from file -> list installed', () => {
-    // Reset agentbox state
-    const agentboxHome = path.join(tmpDir, '.agentbox');
-    if (fs.existsSync(agentboxHome)) {
-      fs.rmSync(agentboxHome, { recursive: true });
+    // Reset brewagent state
+    const brewagentHome = path.join(tmpDir, '.brewagent');
+    if (fs.existsSync(brewagentHome)) {
+      fs.rmSync(brewagentHome, { recursive: true });
     }
 
     const workDir = path.join(tmpDir, 'e2e-test');

@@ -28,7 +28,7 @@ async function pack(dir, options) {
     console.log(chalk.dim('    • AirDrop it to a friend'));
     console.log(chalk.dim('    • Upload to a shared drive'));
     console.log(chalk.dim('    • Post it on the internet'));
-    console.log(chalk.dim('    • Publish: agentbox publish .'));
+    console.log(chalk.dim('    • Publish: brewagent publish .'));
     console.log('');
   } catch (err) {
     spinner.fail('Failed to pack agent');

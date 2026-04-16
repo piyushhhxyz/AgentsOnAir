@@ -11,7 +11,7 @@ const { test, assert, assertEqual, printSummary } = createTestRunner();
 const yaml = require('js-yaml');
 
 async function runAllTests() {
-  console.log('\n\x1b[1m  agentbox enrich tests\x1b[0m\n');
+  console.log('\n\x1b[1m  brewagent enrich tests\x1b[0m\n');
 
   // ─── Task 1: Research assistant knowledge files ───
   console.log('  \x1b[36mresearch-assistant knowledge\x1b[0m');

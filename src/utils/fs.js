@@ -1,12 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const { AGENTBOX_HOME, REGISTRY_DIR, INSTALLED_DIR } = require('./constants');
+const { BREWAGENT_HOME, REGISTRY_DIR, INSTALLED_DIR } = require('./constants');
 
 /**
- * Ensure all agentbox directories exist
+ * Ensure all brewagent directories exist
  */
 function ensureDirs() {
-  for (const dir of [AGENTBOX_HOME, REGISTRY_DIR, INSTALLED_DIR]) {
+  for (const dir of [BREWAGENT_HOME, REGISTRY_DIR, INSTALLED_DIR]) {
     fs.mkdirSync(dir, { recursive: true });
   }
 }

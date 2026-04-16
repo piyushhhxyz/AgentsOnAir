@@ -50,7 +50,7 @@ async function installFromFile(filePath) {
     console.log(`  ${chalk.dim('from')} ${path.basename(filePath)}`);
     console.log(`  ${chalk.dim('to')}   ${targetDir}`);
     console.log('');
-    console.log(`  Run it: ${chalk.cyan(`agentbox run ${manifest.name}`)}`);
+    console.log(`  Run it: ${chalk.cyan(`brewagent run ${manifest.name}`)}`);
     console.log('');
   } catch (err) {
     spinner.fail('Installation failed');
@@ -97,10 +97,10 @@ async function installFromRegistry(name) {
     spinner.fail(`Agent ${chalk.bold(fullName)} not found in registry`);
     console.log('');
     console.log(chalk.dim('  Available agents:'));
-    console.log(chalk.dim(`    agentbox list`));
+    console.log(chalk.dim(`    brewagent list`));
     console.log('');
     console.log(chalk.dim('  Or install from a .agent file:'));
-    console.log(chalk.dim(`    agentbox install ./path/to/agent.agent`));
+    console.log(chalk.dim(`    brewagent install ./path/to/agent.agent`));
     console.log('');
     process.exit(1);
   }
@@ -117,7 +117,7 @@ async function installFromRegistry(name) {
     console.log(`  ${chalk.dim('Category:')} ${manifest.metadata?.category || 'general'}`);
     console.log(`  ${chalk.dim('Location:')} ${targetDir}`);
     console.log('');
-    console.log(`  Run it: ${chalk.cyan(`agentbox run ${agentName}`)}`);
+    console.log(`  Run it: ${chalk.cyan(`brewagent run ${agentName}`)}`);
     console.log('');
   } catch (err) {
     spinner.fail('Installation failed');

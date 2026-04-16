@@ -39,7 +39,7 @@ async function publish(dir) {
     console.log(`  ${chalk.dim('Registry:')} ${scopeDir}`);
     console.log('');
     console.log(chalk.dim('  Others can now install it:'));
-    console.log(`    ${chalk.cyan(`agentbox install @${author}/${manifest.name}`)}`);
+    console.log(`    ${chalk.cyan(`brewagent install @${author}/${manifest.name}`)}`);
     console.log('');
   } catch (err) {
     spinner.fail('Publish failed');

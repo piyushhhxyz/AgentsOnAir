@@ -136,7 +136,7 @@ const DEMO_RESPONSES = {
     `- Watch for standardization efforts — they'll shape the next wave\n` +
     `- Confidence: High for market trends, Medium for specific predictions` +
     knowledgeRef +
-    `\n\n_[${name} — research agent, powered by agentbox]_`,
+    `\n\n_[${name} — research agent, powered by brewagent]_`,
 
   coding: (userMessage, name, knowledgeRef) =>
     `Here's my code review analysis for "${userMessage}":\n\n` +
@@ -146,7 +146,7 @@ const DEMO_RESPONSES = {
     `- The function could benefit from input validation\n` +
     `- Good use of patterns, but watch for potential memory leaks` +
     knowledgeRef +
-    `\n\n_[${name} — coding agent, powered by agentbox]_`,
+    `\n\n_[${name} — coding agent, powered by brewagent]_`,
 
   writing: (userMessage, name, knowledgeRef) =>
     `Here's what I've crafted for "${userMessage}":\n\n` +
@@ -158,7 +158,7 @@ const DEMO_RESPONSES = {
     `Happy to share the playbook — no strings. Reply "sure" and I'll send it over.\n\n` +
     `**Subject lines:** "Quick question about [company]" | "Saw your launch — one idea"` +
     knowledgeRef +
-    `\n\n_[${name} — outreach agent, powered by agentbox]_`,
+    `\n\n_[${name} — outreach agent, powered by brewagent]_`,
 
   finance: (userMessage, name, knowledgeRef) =>
     `Great question about "${userMessage}"! Here's what you should know:\n\n` +
@@ -174,7 +174,7 @@ const DEMO_RESPONSES = {
     `- Keep receipts for everything — the IRS requires documentation\n\n` +
     `*Disclaimer: Consult a licensed CPA for your specific situation.*` +
     knowledgeRef +
-    `\n\n_[${name} — tax agent, powered by agentbox]_`,
+    `\n\n_[${name} — tax agent, powered by brewagent]_`,
 
   general: (userMessage, name, knowledgeRef) =>
     `Here's my analysis of "${userMessage}":\n\n` +
@@ -184,7 +184,7 @@ const DEMO_RESPONSES = {
     `- I'd recommend starting with the simplest path forward\n\n` +
     `Let me know if you'd like me to dive deeper into any specific aspect.` +
     knowledgeRef +
-    `\n\n_[${name} — powered by agentbox]_`,
+    `\n\n_[${name} — powered by brewagent]_`,
 };
 
 /**
@@ -226,10 +226,10 @@ async function run(name, options) {
     console.log(chalk.red(`  Agent "${name}" not found.`));
     console.log('');
     console.log(chalk.dim('  Installed agents:'));
-    console.log(chalk.dim('    agentbox list --installed'));
+    console.log(chalk.dim('    brewagent list --installed'));
     console.log('');
     console.log(chalk.dim('  Install an agent first:'));
-    console.log(chalk.dim('    agentbox install @user/agent-name'));
+    console.log(chalk.dim('    brewagent install @user/agent-name'));
     console.log('');
     process.exit(1);
   }

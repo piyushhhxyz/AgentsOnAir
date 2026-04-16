@@ -61,7 +61,7 @@ async function inspect(file) {
     }
     console.log('');
     
-    console.log(chalk.dim('  Install: agentbox install ' + path.basename(filePath)));
+    console.log(chalk.dim('  Install: brewagent install ' + path.basename(filePath)));
     console.log('');
   } catch (err) {
     console.log(chalk.red(`  Error: ${err.message}`));

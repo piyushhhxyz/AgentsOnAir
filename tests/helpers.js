@@ -1,4 +1,4 @@
-// Shared test harness for agentbox test files
+// Shared test harness for brewagent test files
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -8,7 +8,7 @@ const os = require('os');
  * Returns { tmpDir, origHome, cliPath, cleanup }.
  */
 function createTestEnv(prefix) {
-  const tmpDir = path.join(os.tmpdir(), `agentbox-${prefix}-` + Date.now());
+  const tmpDir = path.join(os.tmpdir(), `brewagent-${prefix}-` + Date.now());
   const origHome = process.env.HOME;
   fs.mkdirSync(tmpDir, { recursive: true });
   process.env.HOME = tmpDir;
