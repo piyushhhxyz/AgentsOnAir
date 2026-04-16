@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agentbox — npm for AI agents</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09090b;
+      --bg-card: #111114;
+      --bg-code: #0d0d10;
+      --border: #1e1e26;
+      --border-bright: #2a2a3a;
+      --text: #e4e4ec;
+      --text-dim: #8888a0;
+      --text-muted: #555568;
+      --accent: #7c6cf0;
+      --accent-glow: rgba(124, 108, 240, 0.25);
+      --green: #00d4a0;
+      --green-glow: rgba(0, 212, 160, 0.2);
+      --orange: #f5a623;
+      --radius: 14px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── Ambient Background ─── */
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 20%, rgba(124, 108, 240, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 60%, rgba(0, 212, 160, 0.04) 0%, transparent 70%);
+    }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* ─── Hero ─── */
+    .hero {
+      text-align: center;
+      padding: 80px 0 60px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(124, 108, 240, 0.1);
+      border: 1px solid rgba(124, 108, 240, 0.2);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 64px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero .subtitle {
+      font-size: 18px;
+      color: var(--text-dim);
+      max-width: 560px;
+      margin: 0 auto 32px;
+    }
+
+    .hero-install {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 24px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 15px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .hero-install:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .hero-install .prompt { color: var(--green); }
+    .hero-install .cmd { color: var(--text); }
+    .hero-install .copy-hint {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: -apple-system, sans-serif;
+    }
+
+    /* ─── Section ─── */
+    section { padding: 60px 0; }
+
+    .section-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      color: var(--text-dim);
+      font-size: 16px;
+      margin-bottom: 40px;
+      max-width: 600px;
+    }
+
+    /* ─── Feature Grid ─── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+      background: rgba(124, 108, 240, 0.1);
+    }
+
+    .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .feature-card p { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
+
+    /* ─── Terminal Demo ─── */
+    .terminal {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .terminal-body {
+      padding: 20px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+
+    .terminal-body .prompt { color: var(--green); }
+    .terminal-body .cmd { color: var(--text); }
+    .terminal-body .comment { color: var(--text-muted); }
+    .terminal-body .output { color: var(--text-dim); }
+    .terminal-body .success { color: var(--green); }
+    .terminal-body .highlight { color: var(--accent); }
+    .terminal-body .flag { color: var(--orange); }
+    .terminal-body .dim { color: var(--text-muted); }
+
+    /* ─── AirDrop Section ─── */
+    .airdrop-section {
+      text-align: center;
+      padding: 80px 0;
+    }
+
+    .airdrop-visual {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      margin: 40px 0;
+      flex-wrap: wrap;
+    }
+
+    .airdrop-device {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 220px;
+      text-align: center;
+    }
+
+    .airdrop-device .device-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+
+    .airdrop-device .device-label {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .airdrop-device .device-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .airdrop-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .airdrop-arrow .arrow-line {
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      position: relative;
+    }
+
+    .airdrop-arrow .arrow-line::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: -4px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid var(--green);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .airdrop-arrow .arrow-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .airdrop-file {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(124, 108, 240, 0.15), rgba(0, 212, 160, 0.15));
+      border: 1px solid rgba(124, 108, 240, 0.3);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-family: 'SF Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      animation: filePulse 3s ease-in-out infinite;
+    }
+
+    @keyframes filePulse {
+      0%, 100% { box-shadow: 0 0 0 rgba(124, 108, 240, 0); }
+      50% { box-shadow: 0 0 20px rgba(124, 108, 240, 0.2); }
+    }
+
+    /* ─── Agent Cards ─── */
+    .agent-showcase {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .agent-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+
+    .agent-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .agent-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+    .agent-card:hover::before { opacity: 1; }
+
+    .agent-card .card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .agent-card .card-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .agent-card .card-icon.finance { background: rgba(245, 166, 35, 0.15); }
+    .agent-card .card-icon.research { background: rgba(52, 152, 219, 0.15); }
+    .agent-card .card-icon.writing { background: rgba(124, 108, 240, 0.15); }
+
+    .agent-card .card-name { font-size: 15px; font-weight: 600; }
+    .agent-card .card-author { font-size: 12px; color: var(--text-dim); }
+    .agent-card .card-desc { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; }
+
+    .agent-card .card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .agent-card .tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(124, 108, 240, 0.08);
+      color: var(--accent);
+      border: 1px solid rgba(124, 108, 240, 0.15);
+    }
+
+    .agent-card .card-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ─── How It Works ─── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .step {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+    }
+
+    .step h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .step p { font-size: 13px; color: var(--text-dim); }
+    .step code {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 10px;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'SF Mono', monospace;
+      color: var(--green);
+    }
+
+    /* ─── CTA ─── */
+    .cta {
+      text-align: center;
+      padding: 80px 0;
+    }
+
+    .cta h2 {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+
+    .cta p {
+      color: var(--text-dim);
+      font-size: 16px;
+      margin-bottom: 28px;
+    }
+
+    .cta-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #5a4bd4);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 30px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--border-bright);
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 640px) {
+      .hero { padding: 48px 0 40px; }
+      .airdrop-visual { flex-direction: column; }
+      .airdrop-arrow { transform: rotate(90deg); }
+      .steps { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <div class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">📦 Open Source &middot; Framework Agnostic &middot; Portable</div>
+      <h1>
+        <span class="gradient">npm</span> for AI agents
+      </h1>
+      <p class="subtitle">
+        Create, package, share, and run AI agents with a single CLI.
+        One file format. Works everywhere. Share agents like sharing files.
+      </p>
+      <div class="hero-install" onclick="copyInstall()" title="Click to copy">
+        <span><span class="prompt">$</span> <span class="cmd">npm install -g agentbox</span></span>
+        <span class="copy-hint">click to copy</span>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section>
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title">Four commands. That's it.</h2>
+      <p class="section-desc">From idea to shared agent in under a minute.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Create</h3>
+          <p>Scaffold an agent with a template, system prompt, and knowledge files</p>
+          <code>agentbox init my-agent</code>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>Pack</h3>
+          <p>Bundle everything into a single portable <code>.agent</code> file</p>
+          <code>agentbox pack .</code>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Share</h3>
+          <p>AirDrop, email, Slack — send the <code>.agent</code> file however you want</p>
+          <code>tax-agent-1.0.0.agent</code>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <h3>Run</h3>
+          <p>Install and run on any machine with one command</p>
+          <code>agentbox run tax-agent</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Demo Terminal: Create & Pack -->
+    <section>
+      <div class="section-label">See It In Action</div>
+      <h2 class="section-title">Create an agent in seconds</h2>
+      <p class="section-desc">Every agent is a YAML manifest + knowledge files + tools, packed into one file.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <div class="terminal-title">Terminal — agentbox demo</div>
+        </div>
+        <div class="terminal-body">
+<span class="comment"># Create a research agent from template</span>
+<span class="prompt">$</span> <span class="cmd">agentbox init deep-research</span> <span class="flag">--template research</span>
+
+<span class="success">  ✓ Agent initialized!</span>
+
+<span class="output">  deep-research/</span>
+<span class="output">  ├── <span class="highlight">agent.yaml</span>      # Agent manifest (the brain)</span>
+<span class="output">  ├── <span class="highlight">knowledge/</span>      # Knowledge files (RAG context)</span>
+<span class="output">  ├── <span class="highlight">tools/</span>          # Custom tool scripts</span>
+<span class="output">  └── <span class="dim">README.md</span></span>
+
+<span class="comment"># Pack it into a portable .agent file</span>
+<span class="prompt">$</span> <span class="cmd">agentbox pack deep-research</span>
+
+<span class="success">  ✓ Packed!</span>  <span class="output">deep-research-1.0.0.agent (0.8 KB)</span>
+
+<span class="comment"># Inspect what's inside</span>
+<span class="prompt">$</span> <span class="cmd">agentbox inspect deep-research-1.0.0.agent</span>
+
+<span class="output">  Name:        deep-research</span>
+<span class="output">  Version:     1.0.0</span>
+<span class="output">  Author:      you</span>
+<span class="output">  Category:    research</span>
+<span class="output">  Model:       gpt-4o-mini</span>
+<span class="output">  Knowledge:   2 files (ai-agents-landscape.md, methodologies.md)</span>
+<span class="output">  Size:        0.8 KB</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- AirDrop Section -->
+    <section class="airdrop-section">
+      <div class="section-label">The Killer Feature</div>
+      <h2 class="section-title">🪂 AirDrop for AI Agents</h2>
+      <p class="section-desc" style="margin: 8px auto 0; max-width: 520px;">
+        Share agents like sharing files. AirDrop a <code>.agent</code> file to a teammate,
+        they install and run it instantly. No accounts, no cloud, no friction.
+      </p>
+
+      <div class="airdrop-visual">
+        <div class="airdrop-device">
+          <div class="device-icon">💻</div>
+          <div class="device-label">Your Mac</div>
+          <div class="device-sub">agentbox pack .</div>
+        </div>
+
+        <div class="airdrop-arrow">
+          <div class="airdrop-file">📦 tax-agent-1.0.0.agent</div>
+          <div class="arrow-line"></div>
+          <div class="arrow-label">AirDrop / Slack / Email</div>
+        </div>
+
+        <div class="airdrop-device">
+          <div class="device-icon">💻</div>
+          <div class="device-label">Their Mac</div>
+          <div class="device-sub">agentbox install &amp; run</div>
+        </div>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <div class="terminal-title">Terminal — receiving an AirDrop</div>
+        </div>
+        <div class="terminal-body">
+<span class="comment"># Someone AirDropped you a .agent file — install it</span>
+<span class="prompt">$</span> <span class="cmd">agentbox install</span> <span class="highlight">~/Downloads/tax-agent-1.0.0.agent</span>
+
+<span class="success">  ✓ Installed!</span>  <span class="output">tax-agent v1.0.0 by piyush</span>
+<span class="output">  Category:    finance</span>
+<span class="output">  Knowledge:   2 files bundled</span>
+
+<span class="comment"># Run it immediately</span>
+<span class="prompt">$</span> <span class="cmd">agentbox run tax-agent</span> <span class="flag">-m "What deductions can I claim as a freelancer?"</span>
+
+<span class="output">  ┌─────────────────────────────────────────┐</span>
+<span class="output">  │ 🤖 <span class="highlight">tax-agent</span> v1.0.0                      │</span>
+<span class="output">  │ <span class="dim">AI tax advisor — finds deductions</span>       │</span>
+<span class="output">  └─────────────────────────────────────────┘</span>
+
+<span class="output">  Provider:  <span class="flag">local/demo</span></span>
+<span class="output">  Knowledge: <span class="success">2 file(s) loaded</span></span>
+
+<span class="output">  Great question! Here's what you should know:</span>
+<span class="output">  </span>
+<span class="output">  <span class="highlight">## Key Deductions for Freelancers</span></span>
+<span class="output">  - <span class="success">Home Office</span>: $5/sq ft, up to $1,500</span>
+<span class="output">  - <span class="success">Self-Employment Tax</span>: Deduct 50% from gross</span>
+<span class="output">  - <span class="success">Health Insurance</span>: 100% deductible</span>
+<span class="output">  - <span class="success">Equipment</span>: Section 179 immediate expensing</span>
+<span class="output">  </span>
+<span class="output">  📚 <span class="dim">Sources: tax-brackets-2024.md, common-deductions.md</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Example Agents -->
+    <section>
+      <div class="section-label">Built-In Examples</div>
+      <h2 class="section-title">Agents ready to go</h2>
+      <p class="section-desc">Three example agents ship with agentbox. Install, customize, or use as templates for your own.</p>
+
+      <div class="agent-showcase">
+        <div class="agent-card">
+          <div class="card-top">
+            <div class="card-icon finance">💰</div>
+            <div>
+              <div class="card-name">tax-agent</div>
+              <div class="card-author">by piyush</div>
+            </div>
+          </div>
+          <div class="card-desc">AI tax advisor — answers tax questions, finds deductions, explains tax law. Bundled with 2024 tax brackets and deduction guides.</div>
+          <div class="card-tags">
+            <span class="tag">tax</span>
+            <span class="tag">finance</span>
+            <span class="tag">deductions</span>
+          </div>
+          <div class="card-meta">
+            <span>2 knowledge files</span>
+            <span>1.4 KB</span>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="card-top">
+            <div class="card-icon research">🔬</div>
+            <div>
+              <div class="card-name">research-assistant</div>
+              <div class="card-author">by sara</div>
+            </div>
+          </div>
+          <div class="card-desc">Deep research agent — analyzes topics, finds patterns, delivers structured insights. Includes AI landscape data and research methodologies.</div>
+          <div class="card-tags">
+            <span class="tag">research</span>
+            <span class="tag">analysis</span>
+            <span class="tag">deep-dive</span>
+          </div>
+          <div class="card-meta">
+            <span>2 knowledge files</span>
+            <span>1.8 KB</span>
+          </div>
+        </div>
+
+        <div class="agent-card">
+          <div class="card-top">
+            <div class="card-icon writing">✍️</div>
+            <div>
+              <div class="card-name">cold-outreach</div>
+              <div class="card-author">by deepak</div>
+            </div>
+          </div>
+          <div class="card-desc">Cold outreach specialist — crafts personalized, high-converting messages. Includes proven templates and email best practices.</div>
+          <div class="card-tags">
+            <span class="tag">outreach</span>
+            <span class="tag">sales</span>
+            <span class="tag">email</span>
+          </div>
+          <div class="card-meta">
+            <span>2 knowledge files</span>
+            <span>1.2 KB</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- .agent File Format -->
+    <section>
+      <div class="section-label">The Format</div>
+      <h2 class="section-title">One file. Everything inside.</h2>
+      <p class="section-desc">A <code>.agent</code> file is a portable zip containing the manifest, knowledge, and tools. Framework-agnostic. Self-describing.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <div class="terminal-title">agent.yaml — the manifest</div>
+        </div>
+        <div class="terminal-body">
+<span class="highlight">name:</span> <span class="output">"tax-agent"</span>
+<span class="highlight">version:</span> <span class="output">"1.0.0"</span>
+<span class="highlight">description:</span> <span class="output">"AI tax advisor — finds deductions, explains tax law"</span>
+<span class="highlight">author:</span> <span class="output">"piyush"</span>
+
+<span class="highlight">agent:</span>
+  <span class="highlight">system_prompt:</span> <span class="dim">|</span>
+    <span class="output">You are an expert tax advisor AI. You help with:</span>
+    <span class="output">1. Understanding tax obligations and deadlines</span>
+    <span class="output">2. Finding applicable deductions and credits</span>
+    <span class="output">3. Explaining tax law in plain English</span>
+
+  <span class="highlight">model:</span>
+    <span class="highlight">provider:</span> <span class="output">"openai"</span>
+    <span class="highlight">name:</span> <span class="output">"gpt-4o-mini"</span>
+    <span class="highlight">temperature:</span> <span class="output">0.3</span>
+
+  <span class="highlight">knowledge:</span>
+    <span class="output">- "tax-brackets-2024.md"</span>
+    <span class="output">- "common-deductions.md"</span>
+
+<span class="highlight">metadata:</span>
+  <span class="highlight">category:</span> <span class="output">"finance"</span>
+  <span class="highlight">tags:</span> <span class="output">["tax", "finance", "deductions"]</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section>
+      <div class="section-label">Why agentbox</div>
+      <h2 class="section-title">Built for the agent era</h2>
+      <p class="section-desc">Everything you need to create, share, and run AI agents.</p>
+
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h3>Portable Format</h3>
+          <p>One <code>.agent</code> file contains everything — manifest, knowledge, tools. Share it anywhere.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3>Knowledge Bundling</h3>
+          <p>Bundle markdown files as RAG context. The agent carries its own knowledge base.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔌</div>
+          <h3>Framework Agnostic</h3>
+          <p>Works with OpenAI, Anthropic, local models. The format doesn't lock you in.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🪂</div>
+          <h3>AirDrop Sharing</h3>
+          <p>Share agents like files. AirDrop, email, Slack — no accounts needed.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <h3>Local Registry</h3>
+          <p>Publish and discover agents locally. Browse, install, and manage with simple commands.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Secure by Default</h3>
+          <p>Path traversal protection, input sanitization, scoped agent resolution.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <h2>Start building agents</h2>
+      <p>Install agentbox and create your first agent in 30 seconds.</p>
+      <div class="cta-buttons">
+        <a href="https://github.com/piyushhhxyz/AgentsOnAir" class="btn btn-primary" target="_blank">⭐ Star on GitHub</a>
+        <a href="https://github.com/piyushhhxyz/AgentsOnAir#readme" class="btn btn-secondary" target="_blank">📖 Read the Docs</a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>Built by <a href="https://github.com/piyushhhxyz" target="_blank">piyush</a> &middot; <a href="https://github.com/piyushhhxyz/AgentsOnAir" target="_blank">GitHub</a> &middot; MIT License</p>
+    </footer>
+  </div>
+
+  <script>
+    function copyInstall() {
+      navigator.clipboard.writeText('npm install -g agentbox').then(() => {
+        const el = document.querySelector('.hero-install .copy-hint');
+        el.textContent = 'copied!';
+        el.style.color = 'var(--green)';
+        setTimeout(() => { el.textContent = 'click to copy'; el.style.color = ''; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

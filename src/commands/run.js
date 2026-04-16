@@ -103,10 +103,22 @@ async function runWithOpenAI(manifest, systemPrompt, model, messages, userMessag
  * Run agent in local/demo mode — uses the system prompt to simulate agent behavior
  * This works without any API key for demo purposes
  */
-function runLocal(manifest, systemPrompt, userMessage) {
+function runLocal(manifest, systemPrompt, userMessage, knowledge) {
   const name = manifest.name;
   const category = manifest.metadata?.category || 'general';
   
+  // Build knowledge summary if available
+  let knowledgeRef = '';
+  if (knowledge && knowledge.length > 0) {
+    knowledgeRef = '\n\n📚 **Sources referenced:** ' + knowledge.map(k => k.file).join(', ');
+    
+    // Extract a relevant snippet from knowledge (first 300 chars of first file)
+    const snippet = knowledge[0].content.slice(0, 300).split('\n').filter(l => l.trim() && !l.startsWith('#')).slice(0, 3).join('\n  ');
+    if (snippet) {
+      knowledgeRef = `\n\n📚 **From knowledge base (${knowledge[0].file}):**\n  ${snippet}\n` + knowledgeRef;
+    }
+  }
+
   // Simulate intelligent responses based on the agent's category.
   // Each category maps to a single demo response string.
   const responses = {
@@ -122,16 +134,18 @@ function runLocal(manifest, systemPrompt, userMessage) {
       `## Key Takeaways\n` +
       `- Start with the dominant approach, then evaluate alternatives\n` +
       `- Watch for standardization efforts — they'll shape the next wave\n` +
-      `- Confidence: High for market trends, Medium for specific predictions\n\n` +
-      `_[${name} — research agent, powered by agentbox]_`,
+      `- Confidence: High for market trends, Medium for specific predictions` +
+      knowledgeRef +
+      `\n\n_[${name} — research agent, powered by agentbox]_`,
     coding:
       `Here's my code review analysis for "${userMessage}":\n\n` +
       `**Quality Score: 7/10**\n\n` +
       `Issues found:\n` +
       `- Consider adding error handling for edge cases\n` +
       `- The function could benefit from input validation\n` +
-      `- Good use of patterns, but watch for potential memory leaks\n\n` +
-      `_[${name} — coding agent, powered by agentbox]_`,
+      `- Good use of patterns, but watch for potential memory leaks` +
+      knowledgeRef +
+      `\n\n_[${name} — coding agent, powered by agentbox]_`,
     writing:
       `Here's what I've crafted for "${userMessage}":\n\n` +
       `**Option A (Direct — 47 words):**\n` +
@@ -140,8 +154,9 @@ function runLocal(manifest, systemPrompt, userMessage) {
       `**Option B (Value-first — 52 words):**\n` +
       `Quick thought: most dev teams at your stage spend 30% of eng time on [pain point]. We've helped 50+ teams reclaim that.\n` +
       `Happy to share the playbook — no strings. Reply "sure" and I'll send it over.\n\n` +
-      `**Subject lines:** "Quick question about [company]" | "Saw your launch — one idea"\n\n` +
-      `_[${name} — outreach agent, powered by agentbox]_`,
+      `**Subject lines:** "Quick question about [company]" | "Saw your launch — one idea"` +
+      knowledgeRef +
+      `\n\n_[${name} — outreach agent, powered by agentbox]_`,
     finance:
       `Great question about "${userMessage}"! Here's what you should know:\n\n` +
       `## Key Deductions & Strategies\n` +
@@ -154,16 +169,18 @@ function runLocal(manifest, systemPrompt, userMessage) {
       `- Standard deduction for 2024: $14,600 (single)\n` +
       `- Estimated tax payments due quarterly (next: Jan 15)\n` +
       `- Keep receipts for everything — the IRS requires documentation\n\n` +
-      `*Disclaimer: Consult a licensed CPA for your specific situation.*\n\n` +
-      `_[${name} — tax agent, powered by agentbox]_`,
+      `*Disclaimer: Consult a licensed CPA for your specific situation.*` +
+      knowledgeRef +
+      `\n\n_[${name} — tax agent, powered by agentbox]_`,
     general:
       `Here's my analysis of "${userMessage}":\n\n` +
       `I've looked at this from multiple angles:\n` +
       `- The core question has several important dimensions\n` +
       `- There are well-established approaches worth considering\n` +
       `- I'd recommend starting with the simplest path forward\n\n` +
-      `Let me know if you'd like me to dive deeper into any specific aspect.\n\n` +
-      `_[${name} — powered by agentbox]_`,
+      `Let me know if you'd like me to dive deeper into any specific aspect.` +
+      knowledgeRef +
+      `\n\n_[${name} — powered by agentbox]_`,
   };
   
   return responses[category] || responses.general;
@@ -231,7 +248,7 @@ async function run(name, options) {
     
     let reply;
     if (useLocal) {
-      reply = runLocal(manifest, systemPrompt, options.message);
+      reply = runLocal(manifest, systemPrompt, options.message, knowledge);
     } else {
       try {
         reply = await runWithOpenAI(manifest, systemPrompt, options.model, [], options.message);
@@ -239,7 +256,7 @@ async function run(name, options) {
         console.log(chalk.red(`  Error: ${err.message}`));
         console.log(chalk.dim('  Falling back to local mode...'));
         console.log('');
-        reply = runLocal(manifest, systemPrompt, options.message);
+        reply = runLocal(manifest, systemPrompt, options.message, knowledge);
       }
     }
     
@@ -280,12 +297,12 @@ async function run(name, options) {
     
     let reply;
     if (useLocal) {
-      reply = runLocal(manifest, systemPrompt, input);
+      reply = runLocal(manifest, systemPrompt, input, knowledge);
     } else {
       try {
         reply = await runWithOpenAI(manifest, systemPrompt, options.model, messages, input);
       } catch (err) {
-        reply = `Error: ${err.message}. Falling back to local mode.\n\n` + runLocal(manifest, systemPrompt, input);
+        reply = `Error: ${err.message}. Falling back to local mode.\n\n` + runLocal(manifest, systemPrompt, input, knowledge);
       }
     }
     

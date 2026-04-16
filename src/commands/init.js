@@ -89,6 +89,42 @@ async function init(name, options) {
     },
   };
   
+  // Add template-specific starter files
+  if (template === 'research') {
+    fs.writeFileSync(path.join(dir, 'knowledge', 'getting-started.md'), 
+`# Research Knowledge Base
+
+Add your research materials here. The agent will use these as context when answering questions.
+
+## How to use
+- Add markdown files with facts, data, and analysis
+- The agent automatically includes all files in this directory as context
+- More specific knowledge = better, more accurate responses
+
+## Example topics to research
+- Market analysis and competitive landscapes
+- Technology trends and adoption patterns
+- Industry reports and data points
+`);
+    manifest.agent.knowledge = ['getting-started.md'];
+  }
+
+  if (template === 'outreach') {
+    fs.writeFileSync(path.join(dir, 'knowledge', 'target-audience.md'),
+`# Target Audience Profile
+
+Define your target audience here. The agent uses this to personalize outreach.
+
+## Template
+- **Industry**: [e.g., SaaS, fintech, healthcare]
+- **Role**: [e.g., CTO, VP Engineering, Head of Product]
+- **Company size**: [e.g., 50-200 employees, Series A-B]
+- **Pain points**: [list 3-5 specific pain points]
+- **Your value prop**: [what you offer that solves their pain]
+`);
+    manifest.agent.knowledge = ['target-audience.md'];
+  }
+
   // Write agent.yaml
   const yamlContent = yaml.dump(manifest, { lineWidth: 80, noRefs: true });
   fs.writeFileSync(path.join(dir, 'agent.yaml'), yamlContent);

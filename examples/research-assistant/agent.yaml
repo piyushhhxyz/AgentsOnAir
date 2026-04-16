@@ -29,7 +29,9 @@ agent:
     max_tokens: 4096
 
   tools: []
-  knowledge: []
+  knowledge:
+    - "ai-agents-landscape-2024.md"
+    - "research-methodologies.md"
 
 metadata:
   category: "research"
