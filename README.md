@@ -4,6 +4,43 @@
 
 ---
 
+## Quick Start
+
+```bash
+git clone https://github.com/piyushhhxyz/AgentsOnAir.git
+cd AgentsOnAir
+npm install
+
+# Set up the CLI (pick one):
+npm link                                    # if you have write access to global node_modules
+# OR
+alias brewagent="node $(pwd)/src/cli.js"    # works everywhere (Nix, restricted envs, etc.)
+
+# Pack an agent
+brewagent pack examples/startup-advisor
+# -> startup-advisor-1.0.0.agent (1.7 KB)
+
+# Share the .agent file (AirDrop, Slack, email — however you want)
+
+# Install and run it
+brewagent install startup-advisor-1.0.0.agent
+export OPENAI_API_KEY="your-key"   # optional — works without it in demo mode
+brewagent run startup-advisor -m "I'm building npm for AI agents"
+```
+
+### All Commands
+| Command | What it does |
+|---|---|
+| `brewagent init [name]` | Scaffold a new agent (with templates: research, outreach, etc.) |
+| `brewagent pack [dir]` | Bundle into a portable `.agent` file |
+| `brewagent install <file>` | Install from `.agent` file or registry |
+| `brewagent run <name>` | Run an installed agent |
+| `brewagent publish [dir]` | Publish to local registry |
+| `brewagent list` | Browse registry and installed agents |
+| `brewagent inspect <file>` | Examine a `.agent` file |
+
+---
+
 ## The Problem
 
 There's a sharing primitive for everything in software.

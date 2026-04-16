@@ -70,8 +70,8 @@ function buildSystemPrompt(manifest, knowledge) {
   return prompt;
 }
 
-// Supported remote providers — only OpenAI has a real implementation today
-const SUPPORTED_PROVIDERS = new Set(['openai']);
+// Only OpenAI has a real backend implementation today.
+const SUPPORTED_PROVIDER = 'openai';
 
 /**
  * Run agent with OpenAI API
@@ -100,73 +100,121 @@ async function runWithOpenAI(manifest, systemPrompt, model, messages, userMessag
 }
 
 /**
- * Run agent in local/demo mode — uses the system prompt to simulate agent behavior
- * This works without any API key for demo purposes
+ * Build a knowledge reference string from loaded knowledge files.
+ * Returns an empty string when no knowledge is present.
  */
-function runLocal(manifest, systemPrompt, userMessage) {
+function buildKnowledgeRef(knowledge) {
+  if (!knowledge || knowledge.length === 0) return '';
+
+  const sourcesList = '📚 **Sources referenced:** ' + knowledge.map(k => k.file).join(', ');
+
+  // Extract a readable snippet from the first knowledge file
+  const rawLines = knowledge[0].content.slice(0, 300).split('\n');
+  const contentLines = rawLines.filter(l => l.trim() && !l.startsWith('#'));
+  const snippet = contentLines.slice(0, 3).join('\n  ');
+
+  if (snippet) {
+    return `\n\n📚 **From knowledge base (${knowledge[0].file}):**\n  ${snippet}\n` + sourcesList;
+  }
+  return '\n\n' + sourcesList;
+}
+
+// Demo response templates — one per category.
+// Each is a function(userMessage, name, knowledgeRef) → string.
+const DEMO_RESPONSES = {
+  research: (userMessage, name, knowledgeRef) =>
+    `Based on my deep-dive into "${userMessage}", here are the key findings:\n\n` +
+    `## Overview\n` +
+    `This is a rapidly evolving space with several key dimensions worth examining.\n\n` +
+    `## Key Findings\n` +
+    `1. **Market Landscape**: Multiple competing approaches exist, each with distinct trade-offs\n` +
+    `2. **Emerging Patterns**: Consolidation around open standards is accelerating\n` +
+    `3. **Data Points**: Industry reports suggest 3x growth in adoption over the past 12 months\n` +
+    `4. **Non-obvious Insight**: The biggest bottleneck isn't technology — it's distribution\n\n` +
+    `## Key Takeaways\n` +
+    `- Start with the dominant approach, then evaluate alternatives\n` +
+    `- Watch for standardization efforts — they'll shape the next wave\n` +
+    `- Confidence: High for market trends, Medium for specific predictions` +
+    knowledgeRef +
+    `\n\n_[${name} — research agent, powered by brewagent]_`,
+
+  coding: (userMessage, name, knowledgeRef) =>
+    `Here's my code review analysis for "${userMessage}":\n\n` +
+    `**Quality Score: 7/10**\n\n` +
+    `Issues found:\n` +
+    `- Consider adding error handling for edge cases\n` +
+    `- The function could benefit from input validation\n` +
+    `- Good use of patterns, but watch for potential memory leaks` +
+    knowledgeRef +
+    `\n\n_[${name} — coding agent, powered by brewagent]_`,
+
+  writing: (userMessage, name, knowledgeRef) =>
+    `Here's what I've crafted for "${userMessage}":\n\n` +
+    `**Option A (Direct — 47 words):**\n` +
+    `Hey — saw your team just shipped [recent launch]. Impressive velocity.\n` +
+    `We built a tool that cuts [specific pain point] by 40% for teams your size. Two-minute demo, no commitment. Worth a look?\n\n` +
+    `**Option B (Value-first — 52 words):**\n` +
+    `Quick thought: most dev teams at your stage spend 30% of eng time on [pain point]. We've helped 50+ teams reclaim that.\n` +
+    `Happy to share the playbook — no strings. Reply "sure" and I'll send it over.\n\n` +
+    `**Subject lines:** "Quick question about [company]" | "Saw your launch — one idea"` +
+    knowledgeRef +
+    `\n\n_[${name} — outreach agent, powered by brewagent]_`,
+
+  finance: (userMessage, name, knowledgeRef) =>
+    `Great question about "${userMessage}"! Here's what you should know:\n\n` +
+    `## Key Deductions & Strategies\n` +
+    `- **Home Office**: $5/sq ft simplified method, up to 300 sq ft ($1,500 max)\n` +
+    `- **Self-Employment Tax**: Deduct 50% of SE tax from gross income\n` +
+    `- **Health Insurance**: 100% deductible if self-employed\n` +
+    `- **Retirement**: SEP-IRA contributions up to 25% of net earnings\n` +
+    `- **Equipment**: Section 179 for immediate expensing of business assets\n\n` +
+    `## Important Reminders\n` +
+    `- Standard deduction for 2024: $14,600 (single)\n` +
+    `- Estimated tax payments due quarterly (next: Jan 15)\n` +
+    `- Keep receipts for everything — the IRS requires documentation\n\n` +
+    `*Disclaimer: Consult a licensed CPA for your specific situation.*` +
+    knowledgeRef +
+    `\n\n_[${name} — tax agent, powered by brewagent]_`,
+
+  general: (userMessage, name, knowledgeRef) =>
+    `Here's my analysis of "${userMessage}":\n\n` +
+    `I've looked at this from multiple angles:\n` +
+    `- The core question has several important dimensions\n` +
+    `- There are well-established approaches worth considering\n` +
+    `- I'd recommend starting with the simplest path forward\n\n` +
+    `Let me know if you'd like me to dive deeper into any specific aspect.` +
+    knowledgeRef +
+    `\n\n_[${name} — powered by brewagent]_`,
+};
+
+/**
+ * Run agent in local/demo mode — uses the system prompt to simulate agent behavior.
+ * This works without any API key for demo purposes.
+ */
+function runLocal(manifest, systemPrompt, userMessage, knowledge) {
   const name = manifest.name;
   const category = manifest.metadata?.category || 'general';
-  
-  // Simulate intelligent responses based on the agent's category.
-  // Each category maps to a single demo response string.
-  const responses = {
-    research:
-      `Based on my deep-dive into "${userMessage}", here are the key findings:\n\n` +
-      `## Overview\n` +
-      `This is a rapidly evolving space with several key dimensions worth examining.\n\n` +
-      `## Key Findings\n` +
-      `1. **Market Landscape**: Multiple competing approaches exist, each with distinct trade-offs\n` +
-      `2. **Emerging Patterns**: Consolidation around open standards is accelerating\n` +
-      `3. **Data Points**: Industry reports suggest 3x growth in adoption over the past 12 months\n` +
-      `4. **Non-obvious Insight**: The biggest bottleneck isn't technology — it's distribution\n\n` +
-      `## Key Takeaways\n` +
-      `- Start with the dominant approach, then evaluate alternatives\n` +
-      `- Watch for standardization efforts — they'll shape the next wave\n` +
-      `- Confidence: High for market trends, Medium for specific predictions\n\n` +
-      `_[${name} — research agent, powered by agentbox]_`,
-    coding:
-      `Here's my code review analysis for "${userMessage}":\n\n` +
-      `**Quality Score: 7/10**\n\n` +
-      `Issues found:\n` +
-      `- Consider adding error handling for edge cases\n` +
-      `- The function could benefit from input validation\n` +
-      `- Good use of patterns, but watch for potential memory leaks\n\n` +
-      `_[${name} — coding agent, powered by agentbox]_`,
-    writing:
-      `Here's what I've crafted for "${userMessage}":\n\n` +
-      `**Option A (Direct — 47 words):**\n` +
-      `Hey — saw your team just shipped [recent launch]. Impressive velocity.\n` +
-      `We built a tool that cuts [specific pain point] by 40% for teams your size. Two-minute demo, no commitment. Worth a look?\n\n` +
-      `**Option B (Value-first — 52 words):**\n` +
-      `Quick thought: most dev teams at your stage spend 30% of eng time on [pain point]. We've helped 50+ teams reclaim that.\n` +
-      `Happy to share the playbook — no strings. Reply "sure" and I'll send it over.\n\n` +
-      `**Subject lines:** "Quick question about [company]" | "Saw your launch — one idea"\n\n` +
-      `_[${name} — outreach agent, powered by agentbox]_`,
-    finance:
-      `Great question about "${userMessage}"! Here's what you should know:\n\n` +
-      `## Key Deductions & Strategies\n` +
-      `- **Home Office**: $5/sq ft simplified method, up to 300 sq ft ($1,500 max)\n` +
-      `- **Self-Employment Tax**: Deduct 50% of SE tax from gross income\n` +
-      `- **Health Insurance**: 100% deductible if self-employed\n` +
-      `- **Retirement**: SEP-IRA contributions up to 25% of net earnings\n` +
-      `- **Equipment**: Section 179 for immediate expensing of business assets\n\n` +
-      `## Important Reminders\n` +
-      `- Standard deduction for 2024: $14,600 (single)\n` +
-      `- Estimated tax payments due quarterly (next: Jan 15)\n` +
-      `- Keep receipts for everything — the IRS requires documentation\n\n` +
-      `*Disclaimer: Consult a licensed CPA for your specific situation.*\n\n` +
-      `_[${name} — tax agent, powered by agentbox]_`,
-    general:
-      `Here's my analysis of "${userMessage}":\n\n` +
-      `I've looked at this from multiple angles:\n` +
-      `- The core question has several important dimensions\n` +
-      `- There are well-established approaches worth considering\n` +
-      `- I'd recommend starting with the simplest path forward\n\n` +
-      `Let me know if you'd like me to dive deeper into any specific aspect.\n\n` +
-      `_[${name} — powered by agentbox]_`,
-  };
-  
-  return responses[category] || responses.general;
+  const knowledgeRef = buildKnowledgeRef(knowledge);
+  const templateFn = DEMO_RESPONSES[category] || DEMO_RESPONSES.general;
+  return templateFn(userMessage, name, knowledgeRef);
+}
+
+/**
+ * Get a reply from either local mode or the OpenAI API, with automatic
+ * fallback to local mode on API errors.
+ */
+async function getReply(useLocal, manifest, systemPrompt, model, messages, input, knowledge) {
+  if (useLocal) {
+    return runLocal(manifest, systemPrompt, input, knowledge);
+  }
+  try {
+    return await runWithOpenAI(manifest, systemPrompt, model, messages, input);
+  } catch (err) {
+    console.log(chalk.red(`  Error: ${err.message}`));
+    console.log(chalk.dim('  Falling back to local mode...'));
+    console.log('');
+    return runLocal(manifest, systemPrompt, input, knowledge);
+  }
 }
 
 async function run(name, options) {
@@ -178,10 +226,10 @@ async function run(name, options) {
     console.log(chalk.red(`  Agent "${name}" not found.`));
     console.log('');
     console.log(chalk.dim('  Installed agents:'));
-    console.log(chalk.dim('    agentbox list --installed'));
+    console.log(chalk.dim('    brewagent list --installed'));
     console.log('');
     console.log(chalk.dim('  Install an agent first:'));
-    console.log(chalk.dim('    agentbox install @user/agent-name'));
+    console.log(chalk.dim('    brewagent install @user/agent-name'));
     console.log('');
     process.exit(1);
   }
@@ -192,18 +240,19 @@ async function run(name, options) {
   
   // Determine provider
   const provider = options.provider || manifest.agent.model?.provider || 'openai';
+
   const hasApiKey = !!process.env.OPENAI_API_KEY;
 
   // Reject unsupported remote providers early instead of silently falling
   // through to the OpenAI client.
-  if (provider !== 'local' && !SUPPORTED_PROVIDERS.has(provider)) {
+  if (provider !== 'local' && provider !== SUPPORTED_PROVIDER) {
     console.log(chalk.red(`  Error: Provider "${provider}" is not yet supported.`));
-    console.log(chalk.dim(`  Supported providers: ${[...SUPPORTED_PROVIDERS].join(', ')}, local`));
+    console.log(chalk.dim(`  Supported providers: ${SUPPORTED_PROVIDER}, local`));
     console.log('');
     process.exit(1);
   }
 
-  const useLocal = provider === 'local' || (!hasApiKey && provider === 'openai');
+  const useLocal = provider === 'local' || options.local || (!hasApiKey && provider === SUPPORTED_PROVIDER);
   
   // Print agent info
   console.log(chalk.bold.cyan('  ┌─────────────────────────────────────────┐'));
@@ -212,10 +261,17 @@ async function run(name, options) {
   console.log(chalk.bold.cyan('  └─────────────────────────────────────────┘'));
   console.log('');
   
-  if (useLocal && provider !== 'local') {
-    console.log(chalk.yellow('  ⚠ No OPENAI_API_KEY found. Running in local demo mode.'));
-    console.log(chalk.dim('    Set OPENAI_API_KEY to use the full LLM-powered agent.'));
+  // If no API key and not explicitly using local mode, error out
+  if (!hasApiKey && !options.local && provider !== 'local') {
+    console.log(chalk.red('  ✕ OPENAI_API_KEY not set.'));
     console.log('');
+    console.log(chalk.dim('    Set your key:'));
+    console.log(chalk.bold('      export OPENAI_API_KEY="sk-..."'));
+    console.log('');
+    console.log(chalk.dim('    Or run in demo mode:'));
+    console.log(chalk.bold('      brewagent run ' + manifest.name + ' --local'));
+    console.log('');
+    process.exit(1);
   }
   
   const modeLabel = useLocal ? chalk.yellow('local/demo') : chalk.green(provider);
@@ -229,19 +285,7 @@ async function run(name, options) {
     console.log(chalk.dim('  You: ') + options.message);
     console.log('');
     
-    let reply;
-    if (useLocal) {
-      reply = runLocal(manifest, systemPrompt, options.message);
-    } else {
-      try {
-        reply = await runWithOpenAI(manifest, systemPrompt, options.model, [], options.message);
-      } catch (err) {
-        console.log(chalk.red(`  Error: ${err.message}`));
-        console.log(chalk.dim('  Falling back to local mode...'));
-        console.log('');
-        reply = runLocal(manifest, systemPrompt, options.message);
-      }
-    }
+    const reply = await getReply(useLocal, manifest, systemPrompt, options.model, [], options.message, knowledge);
     
     console.log(chalk.cyan('  Agent: ') + reply);
     console.log('');
@@ -278,16 +322,7 @@ async function run(name, options) {
       return;
     }
     
-    let reply;
-    if (useLocal) {
-      reply = runLocal(manifest, systemPrompt, input);
-    } else {
-      try {
-        reply = await runWithOpenAI(manifest, systemPrompt, options.model, messages, input);
-      } catch (err) {
-        reply = `Error: ${err.message}. Falling back to local mode.\n\n` + runLocal(manifest, systemPrompt, input);
-      }
-    }
+    const reply = await getReply(useLocal, manifest, systemPrompt, options.model, messages, input, knowledge);
     
     console.log('');
     console.log(chalk.cyan('  Agent: ') + reply);

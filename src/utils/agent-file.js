@@ -89,7 +89,7 @@ function packAgent(sourceDir, outputPath) {
     const entries = fs.readdirSync(sourceDir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(sourceDir, entry.name);
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name.endsWith(AGENT_EXT)) continue;
       
       if (entry.isDirectory()) {
         archive.directory(fullPath, entry.name);
@@ -108,7 +108,9 @@ function packAgent(sourceDir, outputPath) {
 function unpackAgent(agentFilePath, targetDir) {
   const zip = new AdmZip(agentFilePath);
   
-  // recursive: true is a no-op if the directory already exists
+  // Clear the target directory first so that files removed between versions
+  // (e.g. knowledge/old.md) don't persist and leak stale data into prompts.
+  fs.rmSync(targetDir, { recursive: true, force: true });
   fs.mkdirSync(targetDir, { recursive: true });
   zip.extractAllTo(targetDir, true);
   

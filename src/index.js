@@ -1,9 +1,14 @@
-// agentbox — the npm for AI agents
-// Programmatic API for using agentbox as a library
+// brewagent — the npm for AI agents
+// Programmatic API for using brewagent as a library
+//
+// Note: internal helpers like getAgentDir (from utils/fs) and
+// sanitizeManifestField (from utils/validate) are intentionally
+// omitted from the public API — they are implementation details
+// used only by the CLI commands.
 
 const { readManifest, writeManifest, packAgent, unpackAgent, inspectAgent, validateManifest } = require('./utils/agent-file');
 const { parseAgentId, ensureDirs, listRegistryAgents, listInstalledAgents } = require('./utils/fs');
-const { AGENTBOX_HOME, REGISTRY_DIR, INSTALLED_DIR, AGENT_EXT, AGENT_MANIFEST } = require('./utils/constants');
+const { BREWAGENT_HOME, REGISTRY_DIR, INSTALLED_DIR, AGENT_EXT, AGENT_MANIFEST } = require('./utils/constants');
 
 module.exports = {
   // Core operations
@@ -21,7 +26,7 @@ module.exports = {
   listInstalledAgents,
   
   // Constants
-  AGENTBOX_HOME,
+  BREWAGENT_HOME,
   REGISTRY_DIR,
   INSTALLED_DIR,
   AGENT_EXT,

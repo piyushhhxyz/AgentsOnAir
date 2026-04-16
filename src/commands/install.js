@@ -50,7 +50,7 @@ async function installFromFile(filePath) {
     console.log(`  ${chalk.dim('from')} ${path.basename(filePath)}`);
     console.log(`  ${chalk.dim('to')}   ${targetDir}`);
     console.log('');
-    console.log(`  Run it: ${chalk.cyan(`agentbox run ${manifest.name}`)}`);
+    console.log(`  Run it: ${chalk.cyan(`brewagent run ${manifest.name}`)}`);
     console.log('');
   } catch (err) {
     spinner.fail('Installation failed');
@@ -82,23 +82,25 @@ async function installFromRegistry(name) {
   if (scope) {
     // Prioritise the scoped directory
     const scopePrefix = path.sep + scope + path.sep;
-    agentFile = allAgents.find(f => f.includes(scopePrefix) && exactPattern.test(path.basename(f)));
+    const matches = allAgents.filter(f => f.includes(scopePrefix) && exactPattern.test(path.basename(f)));
+    agentFile = pickNewest(matches, agentName);
   }
 
   // Fallback: search all registry agents (only when no scope was requested,
   // to avoid silently installing a different scope's package)
   if (!agentFile && !scope) {
-    agentFile = allAgents.find(f => exactPattern.test(path.basename(f)));
+    const matches = allAgents.filter(f => exactPattern.test(path.basename(f)));
+    agentFile = pickNewest(matches, agentName);
   }
   
   if (!agentFile) {
     spinner.fail(`Agent ${chalk.bold(fullName)} not found in registry`);
     console.log('');
     console.log(chalk.dim('  Available agents:'));
-    console.log(chalk.dim(`    agentbox list`));
+    console.log(chalk.dim(`    brewagent list`));
     console.log('');
     console.log(chalk.dim('  Or install from a .agent file:'));
-    console.log(chalk.dim(`    agentbox install ./path/to/agent.agent`));
+    console.log(chalk.dim(`    brewagent install ./path/to/agent.agent`));
     console.log('');
     process.exit(1);
   }
@@ -115,7 +117,7 @@ async function installFromRegistry(name) {
     console.log(`  ${chalk.dim('Category:')} ${manifest.metadata?.category || 'general'}`);
     console.log(`  ${chalk.dim('Location:')} ${targetDir}`);
     console.log('');
-    console.log(`  Run it: ${chalk.cyan(`agentbox run ${agentName}`)}`);
+    console.log(`  Run it: ${chalk.cyan(`brewagent run ${agentName}`)}`);
     console.log('');
   } catch (err) {
     spinner.fail('Installation failed');
@@ -125,8 +127,45 @@ async function installFromRegistry(name) {
   }
 }
 
+/**
+ * Extract the semver-like version string from a filename like "foo-1.2.3.agent".
+ * Returns [major, minor, patch] as numbers, or [0,0,0] if unparseable.
+ */
+function extractVersion(filename, agentName) {
+  const base = path.basename(filename, AGENT_EXT); // e.g. "foo-1.2.3"
+  const versionStr = base.slice(agentName.length + 1); // strip "<name>-"
+  const parts = versionStr.split('.').map(Number);
+  if (parts.length >= 3 && parts.every(n => !isNaN(n))) {
+    return parts.slice(0, 3);
+  }
+  return [0, 0, 0];
+}
+
+/**
+ * Given a list of matching .agent file paths, pick the one with the highest
+ * semver version. Returns null if the list is empty.
+ */
+function pickNewest(matches, agentName) {
+  if (matches.length === 0) return null;
+  if (matches.length === 1) return matches[0];
+
+  // Sort descending by semver so [0] is the newest
+  matches.sort((a, b) => {
+    const va = extractVersion(a, agentName);
+    const vb = extractVersion(b, agentName);
+    for (let i = 0; i < 3; i++) {
+      if (vb[i] !== va[i]) return vb[i] - va[i];
+    }
+    return 0;
+  });
+  return matches[0];
+}
+
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Main export is the install command; helpers are exposed for unit testing.
 module.exports = install;
+module.exports.extractVersion = extractVersion;
+module.exports.pickNewest = pickNewest;

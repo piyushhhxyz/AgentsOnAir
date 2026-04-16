@@ -12,12 +12,13 @@ const publishCmd = require('./commands/publish');
 const listCmd = require('./commands/list');
 const inspectCmd = require('./commands/inspect');
 const registryCmd = require('./commands/registry');
+const setupCmd = require('./commands/setup');
 
 const program = new Command();
 
 program
-  .name('agentbox')
-  .description(chalk.bold('agentbox') + ' — the npm for AI agents. Pack, share, install, run.')
+  .name('brewagent')
+  .description(chalk.bold('brewagent') + ' — the npm for AI agents. Pack, share, install, run.')
   .version(pkg.version);
 
 program
@@ -45,6 +46,7 @@ program
   .option('-i, --interactive', 'Run in interactive mode', false)
   .option('--model <model>', 'Override the LLM model')
   .option('--provider <provider>', 'Override the LLM provider (openai, anthropic, ollama)')
+  .option('--local', 'Run in local demo mode (no API key needed)')
   .action(runCmd);
 
 program
@@ -69,14 +71,24 @@ program
   .description('Show registry info and stats')
   .action(registryCmd);
 
-// Banner
+program
+  .command('setup')
+  .description('Configure brewagent (author name)')
+  .option('-a, --author <name>', 'Default author name')
+  .action(setupCmd);
+
+// Banner — box width is computed dynamically so the right border stays
+// aligned regardless of version string length (e.g. 0.1.0 vs 0.10.0).
 if (process.argv.length <= 2) {
+  const BOX_INNER = 39; // character width between ║ borders
+  const pad = (text) => text.padEnd(BOX_INNER);
+  const border = '═'.repeat(BOX_INNER);
   console.log('');
-  console.log(chalk.bold.cyan('  ╔═══════════════════════════════════════╗'));
-  console.log(chalk.bold.cyan('  ║') + chalk.bold('   🤖 agentbox v' + pkg.version + '                  ') + chalk.bold.cyan('║'));
-  console.log(chalk.bold.cyan('  ║') + '   The npm for AI agents.              ' + chalk.bold.cyan('║'));
-  console.log(chalk.bold.cyan('  ║') + '   Pack. Share. Install. Run.          ' + chalk.bold.cyan('║'));
-  console.log(chalk.bold.cyan('  ╚═══════════════════════════════════════╝'));
+  console.log(chalk.bold.cyan(`  ╔${border}╗`));
+  console.log(chalk.bold.cyan('  ║') + chalk.bold(pad(`   🤖 brewagent v${pkg.version}`)) + chalk.bold.cyan('║'));
+  console.log(chalk.bold.cyan('  ║') + pad('   The npm for AI agents.') + chalk.bold.cyan('║'));
+  console.log(chalk.bold.cyan('  ║') + pad('   Pack. Share. Install. Run.') + chalk.bold.cyan('║'));
+  console.log(chalk.bold.cyan(`  ╚${border}╝`));
   console.log('');
 }
 

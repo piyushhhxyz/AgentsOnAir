@@ -1,5 +1,3 @@
-const path = require('path');
-
 /**
  * Sanitize a manifest field (e.g. author, name) to prevent path traversal.
  * Strips any path separators and ".." segments so a crafted manifest like

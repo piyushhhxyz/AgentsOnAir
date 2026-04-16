@@ -29,9 +29,9 @@ function listRegistry() {
     console.log(chalk.dim('  No agents in the registry yet.'));
     console.log('');
     console.log(chalk.dim('  Publish your first agent:'));
-    console.log(chalk.dim('    agentbox init my-agent'));
+    console.log(chalk.dim('    brewagent init my-agent'));
     console.log(chalk.dim('    cd my-agent'));
-    console.log(chalk.dim('    agentbox publish .'));
+    console.log(chalk.dim('    brewagent publish .'));
     console.log('');
     return;
   }
@@ -62,7 +62,7 @@ function listRegistry() {
     }
   }
   
-  console.log(chalk.dim('  Install: agentbox install @author/agent-name'));
+  console.log(chalk.dim('  Install: brewagent install @author/agent-name'));
   console.log('');
 }
 
@@ -73,7 +73,7 @@ function listInstalled() {
     console.log(chalk.dim('  No agents installed.'));
     console.log('');
     console.log(chalk.dim('  Install one:'));
-    console.log(chalk.dim('    agentbox install @piyush/tax-agent'));
+    console.log(chalk.dim('    brewagent install @piyush/tax-agent'));
     console.log('');
     return;
   }
@@ -89,7 +89,7 @@ function listInstalled() {
       
       console.log(`  ${icon} ${chalk.bold(manifest.name)} ${chalk.dim(`v${manifest.version}`)}`);
       console.log(`    ${chalk.dim(manifest.description || 'No description')}`);
-      console.log(`    ${chalk.dim('Run:')} ${chalk.cyan(`agentbox run ${manifest.name}`)}`);
+      console.log(`    ${chalk.dim('Run:')} ${chalk.cyan(`brewagent run ${manifest.name}`)}`);
       console.log('');
     } catch (e) {
       console.log(`  ${chalk.dim('?')} ${chalk.dim(path.basename(agentDir))} ${chalk.red('(invalid)')}`);
