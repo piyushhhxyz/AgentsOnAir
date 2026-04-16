@@ -69,14 +69,18 @@ program
   .description('Show registry info and stats')
   .action(registryCmd);
 
-// Banner
+// Banner — box width is computed dynamically so the right border stays
+// aligned regardless of version string length (e.g. 0.1.0 vs 0.10.0).
 if (process.argv.length <= 2) {
+  const BOX_INNER = 39; // character width between ║ borders
+  const pad = (text) => text.padEnd(BOX_INNER);
+  const border = '═'.repeat(BOX_INNER);
   console.log('');
-  console.log(chalk.bold.cyan('  ╔═══════════════════════════════════════╗'));
-  console.log(chalk.bold.cyan('  ║') + chalk.bold('   🤖 agentbox v' + pkg.version + '                  ') + chalk.bold.cyan('║'));
-  console.log(chalk.bold.cyan('  ║') + '   The npm for AI agents.              ' + chalk.bold.cyan('║'));
-  console.log(chalk.bold.cyan('  ║') + '   Pack. Share. Install. Run.          ' + chalk.bold.cyan('║'));
-  console.log(chalk.bold.cyan('  ╚═══════════════════════════════════════╝'));
+  console.log(chalk.bold.cyan(`  ╔${border}╗`));
+  console.log(chalk.bold.cyan('  ║') + chalk.bold(pad(`   🤖 agentbox v${pkg.version}`)) + chalk.bold.cyan('║'));
+  console.log(chalk.bold.cyan('  ║') + pad('   The npm for AI agents.') + chalk.bold.cyan('║'));
+  console.log(chalk.bold.cyan('  ║') + pad('   Pack. Share. Install. Run.') + chalk.bold.cyan('║'));
+  console.log(chalk.bold.cyan(`  ╚${border}╝`));
   console.log('');
 }
 

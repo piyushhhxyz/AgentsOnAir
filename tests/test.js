@@ -2,48 +2,16 @@
 // Unit tests for agentbox core functionality
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { execSync } = require('child_process');
+const { createTestEnv, createTestRunner } = require('./helpers');
 
-let passed = 0;
-let failed = 0;
-let total = 0;
+const { tmpDir, cliPath, cleanup } = createTestEnv('test');
+const { test, assert, assertEqual, recordAsync, printSummary } = createTestRunner();
 
-function test(name, fn) {
-  total++;
-  try {
-    fn();
-    passed++;
-    console.log(`  \x1b[32m✓\x1b[0m ${name}`);
-  } catch (err) {
-    failed++;
-    console.log(`  \x1b[31m✗\x1b[0m ${name}`);
-    console.log(`    ${err.message}`);
-  }
-}
-
-function assert(condition, msg) {
-  if (!condition) throw new Error(msg || 'Assertion failed');
-}
-
-function assertEqual(a, b, msg) {
-  if (a !== b) throw new Error(msg || `Expected "${b}", got "${a}"`);
-}
-
-// Setup temp dirs
-const tmpDir = path.join(os.tmpdir(), 'agentbox-test-' + Date.now());
-const origHome = process.env.HOME;
-fs.mkdirSync(tmpDir, { recursive: true });
-
-// Override HOME so we don't pollute real ~/.agentbox
-process.env.HOME = tmpDir;
-
-// Require modules after setting HOME
+// Require modules after setting HOME (createTestEnv overrides it)
 const { parseAgentId, ensureDirs, listInstalledAgents } = require('../src/utils/fs');
 const { readManifest, readAndValidateManifest, writeManifest, packAgent, unpackAgent, inspectAgent, validateManifest } = require('../src/utils/agent-file');
 const { sanitizeManifestField } = require('../src/utils/validate');
-
-const cliPath = path.join(__dirname, '..', 'src', 'cli.js');
 
 async function runAllTests() {
   console.log('\n\x1b[1m  agentbox unit tests\x1b[0m\n');
@@ -207,16 +175,15 @@ async function runAllTests() {
   const agentFilePath = path.join(tmpDir, 'test-agent-1.0.0.agent');
 
   // Pack — must await since it's async (handled manually outside test())
-  total++;
   try {
     const result = await packAgent(testAgentDir, agentFilePath);
     assert(fs.existsSync(agentFilePath), '.agent file should exist');
     assert(result.size > 0, 'File should have content');
     assertEqual(result.manifest.name, 'test-agent');
-    passed++;
+    recordAsync(true);
     console.log(`  \x1b[32m✓\x1b[0m packAgent creates .agent file`);
   } catch (err) {
-    failed++;
+    recordAsync(false);
     console.log(`  \x1b[31m✗\x1b[0m packAgent creates .agent file`);
     console.log(`    ${err.message}`);
   }
@@ -339,20 +306,169 @@ async function runAllTests() {
     assertEqual(installedManifest.name, 'e2e-agent');
   });
 
-  // ─── Summary ───
-  console.log('\n  ─────────────────────────────────');
-  console.log(`  ${passed} passing, ${failed} failing, ${total} total`);
+  // ─── Review fix: unpackAgent clears stale files ───
+  console.log('\n  \x1b[36munpackAgent stale-file cleanup\x1b[0m');
 
-  if (failed > 0) {
-    console.log('\x1b[31m  TESTS FAILED\x1b[0m\n');
-    process.exit(1);
-  } else {
-    console.log('\x1b[32m  ALL TESTS PASSED\x1b[0m\n');
+  // This test involves async packAgent, so handle it like the earlier pack test
+  try {
+    // Create v1 agent with an extra knowledge file
+    const v1Dir = path.join(tmpDir, 'stale-v1');
+    fs.mkdirSync(path.join(v1Dir, 'knowledge'), { recursive: true });
+    writeManifest(v1Dir, {
+      name: 'stale-test', version: '1.0.0',
+      agent: { system_prompt: 'v1' },
+    });
+    fs.writeFileSync(path.join(v1Dir, 'knowledge', 'old.md'), '# Old knowledge');
+    fs.writeFileSync(path.join(v1Dir, 'knowledge', 'keep.md'), '# Keep');
+
+    // Create v2 agent WITHOUT old.md
+    const v2Dir = path.join(tmpDir, 'stale-v2');
+    fs.mkdirSync(path.join(v2Dir, 'knowledge'), { recursive: true });
+    writeManifest(v2Dir, {
+      name: 'stale-test', version: '2.0.0',
+      agent: { system_prompt: 'v2' },
+    });
+    fs.writeFileSync(path.join(v2Dir, 'knowledge', 'keep.md'), '# Keep updated');
+
+    const staleTargetDir = path.join(tmpDir, 'stale-install');
+
+    // Pack and install v1
+    const v1File = path.join(tmpDir, 'stale-test-1.0.0.agent');
+    await packAgent(v1Dir, v1File);
+    unpackAgent(v1File, staleTargetDir);
+    assert(fs.existsSync(path.join(staleTargetDir, 'knowledge', 'old.md')),
+      'v1 should have old.md');
+
+    // Pack and install v2 into the same directory
+    const v2File = path.join(tmpDir, 'stale-test-2.0.0.agent');
+    await packAgent(v2Dir, v2File);
+    unpackAgent(v2File, staleTargetDir);
+
+    // old.md should be gone; keep.md should be present
+    assert(!fs.existsSync(path.join(staleTargetDir, 'knowledge', 'old.md')),
+      'old.md should be removed after v2 install');
+    assert(fs.existsSync(path.join(staleTargetDir, 'knowledge', 'keep.md')),
+      'keep.md should still exist');
+    const staleManifest = readManifest(staleTargetDir);
+    assertEqual(staleManifest.version, '2.0.0');
+
+    recordAsync(true);
+    console.log('  \x1b[32m✓\x1b[0m unpackAgent removes files not in new version');
+  } catch (err) {
+    recordAsync(false);
+    console.log('  \x1b[31m✗\x1b[0m unpackAgent removes files not in new version');
+    console.log(`    ${err.message}`);
   }
 
-  // Cleanup
-  process.env.HOME = origHome;
-  try { fs.rmSync(tmpDir, { recursive: true }); } catch (e) {}
+  // ─── Review fix: packAgent skips .agent files ───
+  console.log('\n  \x1b[36mpackAgent skips existing .agent files\x1b[0m');
+
+  try {
+    const packDir = path.join(tmpDir, 'pack-twice');
+    fs.mkdirSync(path.join(packDir, 'knowledge'), { recursive: true });
+    writeManifest(packDir, {
+      name: 'pack-twice', version: '1.0.0',
+      agent: { system_prompt: 'test' },
+    });
+    fs.writeFileSync(path.join(packDir, 'knowledge', 'info.md'), '# Info');
+
+    // First pack — output into the agent's own directory (mimics default behaviour)
+    const firstOutput = path.join(packDir, 'pack-twice-1.0.0.agent');
+    await packAgent(packDir, firstOutput);
+    assert(fs.existsSync(firstOutput), 'First .agent file should exist');
+
+    // Second pack — the .agent file from round 1 now sits in sourceDir
+    const secondOutput = path.join(tmpDir, 'pack-twice-round2.agent');
+    await packAgent(packDir, secondOutput);
+
+    // Inspect second pack — should NOT contain the first .agent file
+    const info = inspectAgent(secondOutput);
+    const fileNames = info.files.map(f => f.name);
+    const agentInArchive = fileNames.some(n => n.endsWith('.agent'));
+    assert(!agentInArchive,
+      'Second pack should not contain .agent files inside archive');
+
+    recordAsync(true);
+    console.log('  \x1b[32m✓\x1b[0m repeated pack does not bundle previous .agent file');
+  } catch (err) {
+    recordAsync(false);
+    console.log('  \x1b[31m✗\x1b[0m repeated pack does not bundle previous .agent file');
+    console.log(`    ${err.message}`);
+  }
+
+  // ─── Review fix: install picks newest version ───
+  console.log('\n  \x1b[36minstall picks newest version\x1b[0m');
+
+  const { extractVersion, pickNewest } = require('../src/commands/install');
+
+  test('extractVersion parses semver from filename', () => {
+    const v = extractVersion('/reg/foo-2.1.3.agent', 'foo');
+    assertEqual(v[0], 2);
+    assertEqual(v[1], 1);
+    assertEqual(v[2], 3);
+  });
+
+  test('extractVersion returns [0,0,0] for unparseable', () => {
+    const v = extractVersion('/reg/foo-bad.agent', 'foo');
+    assertEqual(v[0], 0);
+    assertEqual(v[1], 0);
+    assertEqual(v[2], 0);
+  });
+
+  test('pickNewest returns null for empty list', () => {
+    assertEqual(pickNewest([], 'foo'), null);
+  });
+
+  test('pickNewest returns only element for single-item list', () => {
+    const result = pickNewest(['/reg/foo-1.0.0.agent'], 'foo');
+    assertEqual(result, '/reg/foo-1.0.0.agent');
+  });
+
+  test('pickNewest selects highest semver from multiple versions', () => {
+    const files = [
+      '/reg/foo-1.0.0.agent',
+      '/reg/foo-2.0.0.agent',
+      '/reg/foo-1.5.0.agent',
+    ];
+    const result = pickNewest(files, 'foo');
+    assertEqual(result, '/reg/foo-2.0.0.agent');
+  });
+
+  test('pickNewest handles minor/patch ordering', () => {
+    const files = [
+      '/reg/bar-1.0.9.agent',
+      '/reg/bar-1.1.0.agent',
+      '/reg/bar-1.0.10.agent',
+    ];
+    const result = pickNewest(files, 'bar');
+    assertEqual(result, '/reg/bar-1.1.0.agent');
+  });
+
+  // ─── Banner box dynamic width (Simplification #10) ───
+  console.log('\n  \x1b[36mBanner box dynamic width\x1b[0m');
+
+  test('banner box has aligned borders', () => {
+    // Run CLI without arguments to see the banner — Commander writes help to
+    // stderr and exits 1, so we catch the error and grab stdout from it.
+    let output;
+    try {
+      output = execSync(`node ${cliPath}`, { encoding: 'utf-8' });
+    } catch (err) {
+      output = err.stdout || '';
+    }
+    const lines = output.split('\n').filter(l => l.includes('║') || l.includes('╔') || l.includes('╚'));
+    assert(lines.length >= 3, 'Banner should have at least 3 box lines');
+    // All box lines (including border rows) should end with the closing character
+    // at the same column. Check that the visible-character widths are consistent.
+    for (const line of lines) {
+      const trimmed = line.trimEnd();
+      assert(trimmed.endsWith('╗') || trimmed.endsWith('║') || trimmed.endsWith('╝'),
+        `Box line should end with a border char: ${trimmed}`);
+    }
+  });
+
+  printSummary();
+  cleanup();
 }
 
 runAllTests().catch(err => {

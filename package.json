@@ -7,17 +7,23 @@
     "agentbox": "./src/cli.js"
   },
   "scripts": {
-    "test": "node tests/test.js"
+    "test": "node tests/test.js && node tests/test-enrich.js"
   },
-  "keywords": ["ai", "agents", "package-manager", "sharing", "portable"],
+  "keywords": [
+    "ai",
+    "agents",
+    "package-manager",
+    "sharing",
+    "portable"
+  ],
   "license": "MIT",
   "dependencies": {
+    "adm-zip": "^0.5.10",
+    "archiver": "^6.0.1",
     "chalk": "^4.1.2",
     "commander": "^11.1.0",
     "js-yaml": "^4.1.0",
-    "archiver": "^6.0.1",
-    "adm-zip": "^0.5.10",
-    "ora": "^5.4.1",
-    "openai": "^4.20.0"
+    "openai": "^4.20.0",
+    "ora": "^5.4.1"
   }
 }

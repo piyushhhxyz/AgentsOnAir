@@ -34,7 +34,9 @@ agent:
     max_tokens: 2048
 
   tools: []
-  knowledge: []
+  knowledge:
+    - "outreach-templates.md"
+    - "email-best-practices.md"
 
 metadata:
   category: "writing"
