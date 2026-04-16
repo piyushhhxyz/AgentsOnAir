@@ -6,6 +6,15 @@
   "bin": {
     "brewagent": "./src/cli.js"
   },
+  "files": [
+    "src/",
+    "examples/",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/piyushhhxyz/AgentsOnAir.git"
+  },
   "scripts": {
     "test": "node tests/test.js && node tests/test-enrich.js"
   },
@@ -14,7 +23,10 @@
     "agents",
     "package-manager",
     "sharing",
-    "portable"
+    "portable",
+    "airdrop",
+    "llm",
+    "gpt"
   ],
   "license": "MIT",
   "dependencies": {
