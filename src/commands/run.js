@@ -207,8 +207,8 @@ async function run(name, options) {
   
   // Print agent info
   console.log(chalk.bold.cyan('  ┌─────────────────────────────────────────┐'));
-  console.log(chalk.bold.cyan('  │') + ` 🤖 ${chalk.bold(manifest.name)} v${manifest.version}` + ' '.repeat(Math.max(0, 33 - manifest.name.length - manifest.version.length)) + chalk.bold.cyan('│'));
-  console.log(chalk.bold.cyan('  │') + ` ${chalk.dim(manifest.description || '')}`.slice(0, 42).padEnd(42) + chalk.bold.cyan('│'));
+  console.log(chalk.bold.cyan('  │') + ` 🤖 ${chalk.bold(manifest.name)} v${manifest.version}` + ' '.repeat(Math.max(0, 35 - manifest.name.length - manifest.version.length)) + chalk.bold.cyan('│'));
+  console.log(chalk.bold.cyan('  │') + chalk.dim((' ' + (manifest.description || '')).slice(0, 41).padEnd(41)) + chalk.bold.cyan('│'));
   console.log(chalk.bold.cyan('  └─────────────────────────────────────────┘'));
   console.log('');
   

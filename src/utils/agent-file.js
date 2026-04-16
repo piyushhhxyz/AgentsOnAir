@@ -112,6 +112,13 @@ function unpackAgent(agentFilePath, targetDir) {
   fs.mkdirSync(targetDir, { recursive: true });
   zip.extractAllTo(targetDir, true);
   
+  // Ensure standard subdirectories always exist after extraction.
+  // Empty knowledge/ and tools/ directories are not preserved in the zip
+  // archive (archiver skips empty dirs), so we recreate them here so that
+  // users can add knowledge files without extra manual steps.
+  fs.mkdirSync(path.join(targetDir, 'knowledge'), { recursive: true });
+  fs.mkdirSync(path.join(targetDir, 'tools'), { recursive: true });
+  
   // Read and return manifest
   return readManifest(targetDir);
 }
