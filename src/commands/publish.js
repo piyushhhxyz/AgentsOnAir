@@ -2,9 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
-const { packAgent, readManifest, validateManifest } = require('../utils/agent-file');
+const { packAgent, readAndValidateManifest } = require('../utils/agent-file');
 const { ensureDirs } = require('../utils/fs');
 const { REGISTRY_DIR } = require('../utils/constants');
+const { sanitizeManifestField } = require('../utils/validate');
 
 async function publish(dir) {
   const sourceDir = dir ? path.resolve(dir) : process.cwd();
@@ -12,35 +13,16 @@ async function publish(dir) {
   console.log('');
   ensureDirs();
   
-  // Read and validate manifest
-  let manifest;
-  try {
-    manifest = readManifest(sourceDir);
-  } catch (err) {
-    console.log(chalk.red(`  Error: ${err.message}`));
-    console.log(chalk.dim('  Make sure you\'re in an agent directory with an agent.yaml file.'));
-    console.log('');
-    process.exit(1);
-  }
+  // Read and validate manifest (shared helper)
+  const manifest = readAndValidateManifest(sourceDir);
   
-  const validation = validateManifest(manifest);
-  if (!validation.valid) {
-    console.log(chalk.red('  Validation errors:'));
-    for (const err of validation.errors) {
-      console.log(chalk.red(`    • ${err}`));
-    }
-    console.log('');
-    process.exit(1);
-  }
-  
-  const author = manifest.author || '_local';
+  const author = sanitizeManifestField(manifest.author || '_local');
+  const agentName = sanitizeManifestField(manifest.name);
   const scopeDir = path.join(REGISTRY_DIR, author);
   
-  if (!fs.existsSync(scopeDir)) {
-    fs.mkdirSync(scopeDir, { recursive: true });
-  }
+  fs.mkdirSync(scopeDir, { recursive: true });
   
-  const outputPath = path.join(scopeDir, `${manifest.name}-${manifest.version}.agent`);
+  const outputPath = path.join(scopeDir, `${agentName}-${manifest.version}.agent`);
   
   const spinner = ora({
     text: `Publishing ${chalk.bold(`@${author}/${manifest.name}`)} v${manifest.version}...`,

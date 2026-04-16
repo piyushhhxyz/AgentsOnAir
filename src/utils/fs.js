@@ -7,9 +7,7 @@ const { AGENTBOX_HOME, REGISTRY_DIR, INSTALLED_DIR } = require('./constants');
  */
 function ensureDirs() {
   for (const dir of [AGENTBOX_HOME, REGISTRY_DIR, INSTALLED_DIR]) {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 

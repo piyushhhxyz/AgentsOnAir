@@ -2,16 +2,18 @@ const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
-const { parseAgentId, ensureDirs, getAgentDir } = require('../utils/fs');
+const { parseAgentId, getAgentDir, listRegistryAgents } = require('../utils/fs');
 const { unpackAgent, inspectAgent } = require('../utils/agent-file');
-const { REGISTRY_DIR, INSTALLED_DIR, AGENT_EXT } = require('../utils/constants');
+const { INSTALLED_DIR, AGENT_EXT } = require('../utils/constants');
+const { sanitizeManifestField } = require('../utils/validate');
 
 async function install(nameOrPath, options) {
   console.log('');
-  ensureDirs();
   
-  // Case 1: Installing from a .agent file path
-  if (nameOrPath.endsWith(AGENT_EXT) || fs.existsSync(nameOrPath)) {
+  // Case 1: Installing from a .agent file path — only match regular files
+  // (not directories) to avoid EISDIR errors when a directory shares the name
+  if (nameOrPath.endsWith(AGENT_EXT) ||
+      (fs.existsSync(nameOrPath) && fs.statSync(nameOrPath).isFile())) {
     return installFromFile(nameOrPath);
   }
   
@@ -34,18 +36,21 @@ async function installFromFile(filePath) {
   }).start();
   
   try {
-    // Create a temp dir to inspect
-    const manifest = inspectAgent(resolvedPath).manifest;
-    const targetDir = path.join(INSTALLED_DIR, manifest.author || '_local', manifest.name);
+    // Inspect once and reuse the manifest (avoids parsing the zip twice)
+    const info = inspectAgent(resolvedPath);
+    const manifest = info.manifest;
+    const author = sanitizeManifestField(manifest.author || '_local');
+    const name = sanitizeManifestField(manifest.name);
+    const targetDir = path.join(INSTALLED_DIR, author, name);
     
-    // Unpack
-    const result = unpackAgent(resolvedPath, targetDir);
+    // Unpack (extracts the zip; manifest already known from inspect)
+    unpackAgent(resolvedPath, targetDir);
     
-    spinner.succeed(`Installed ${chalk.bold(result.name)} v${result.version}`);
+    spinner.succeed(`Installed ${chalk.bold(manifest.name)} v${manifest.version}`);
     console.log(`  ${chalk.dim('from')} ${path.basename(filePath)}`);
     console.log(`  ${chalk.dim('to')}   ${targetDir}`);
     console.log('');
-    console.log(`  Run it: ${chalk.cyan(`agentbox run ${result.name}`)}`);
+    console.log(`  Run it: ${chalk.cyan(`agentbox run ${manifest.name}`)}`);
     console.log('');
   } catch (err) {
     spinner.fail('Installation failed');
@@ -63,47 +68,27 @@ async function installFromRegistry(name) {
     prefixText: ' ',
   }).start();
   
-  // Search registry for matching .agent file
+  // Use listRegistryAgents() to find agents, then do an exact match on the
+  // filename pattern "<name>-<version>.agent". This avoids partial matches
+  // (e.g. "foo" matching "foo-bar-1.0.0.agent") and respects scope.
+  const allAgents = listRegistryAgents();
+
+  // Build an exact-match pattern: the basename must start with "<name>-"
+  // followed by a version and end with AGENT_EXT.
+  const exactPattern = new RegExp(`^${escapeRegex(agentName)}-[^/]+\\${AGENT_EXT}$`);
+
   let agentFile = null;
-  
+
   if (scope) {
-    // Look in scope directory
-    const scopeDir = path.join(REGISTRY_DIR, scope);
-    if (fs.existsSync(scopeDir)) {
-      const files = fs.readdirSync(scopeDir);
-      agentFile = files.find(f => f.startsWith(agentName) && f.endsWith(AGENT_EXT));
-      if (agentFile) {
-        agentFile = path.join(scopeDir, agentFile);
-      }
-    }
+    // Prioritise the scoped directory
+    const scopePrefix = path.sep + scope + path.sep;
+    agentFile = allAgents.find(f => f.includes(scopePrefix) && exactPattern.test(path.basename(f)));
   }
-  
-  // Also search flat registry
-  if (!agentFile) {
-    const allFiles = fs.readdirSync(REGISTRY_DIR).filter(f => !fs.statSync(path.join(REGISTRY_DIR, f)).isDirectory());
-    const match = allFiles.find(f => f.startsWith(agentName) && f.endsWith(AGENT_EXT));
-    if (match) {
-      agentFile = path.join(REGISTRY_DIR, match);
-    }
-  }
-  
-  // Deep search in subdirectories
-  if (!agentFile) {
-    function findInDir(dir) {
-      if (!fs.existsSync(dir)) return null;
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          const found = findInDir(fullPath);
-          if (found) return found;
-        } else if (entry.name.startsWith(agentName) && entry.name.endsWith(AGENT_EXT)) {
-          return fullPath;
-        }
-      }
-      return null;
-    }
-    agentFile = findInDir(REGISTRY_DIR);
+
+  // Fallback: search all registry agents (only when no scope was requested,
+  // to avoid silently installing a different scope's package)
+  if (!agentFile && !scope) {
+    agentFile = allAgents.find(f => exactPattern.test(path.basename(f)));
   }
   
   if (!agentFile) {
@@ -138,6 +123,10 @@ async function installFromRegistry(name) {
     console.log('');
     process.exit(1);
   }
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 module.exports = install;

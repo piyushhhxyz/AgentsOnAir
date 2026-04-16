@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
 const yaml = require('js-yaml');
-const { DEFAULT_AGENT_YAML } = require('../utils/constants');
 
 // Templates for different agent types
 const TEMPLATES = {

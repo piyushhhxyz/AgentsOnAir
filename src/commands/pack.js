@@ -1,33 +1,15 @@
 const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
-const { packAgent, readManifest, validateManifest } = require('../utils/agent-file');
+const { packAgent, readAndValidateManifest } = require('../utils/agent-file');
 
 async function pack(dir, options) {
   const sourceDir = dir ? path.resolve(dir) : process.cwd();
   
   console.log('');
   
-  // Validate manifest first
-  let manifest;
-  try {
-    manifest = readManifest(sourceDir);
-  } catch (err) {
-    console.log(chalk.red(`  Error: ${err.message}`));
-    console.log(chalk.dim('  Make sure you\'re in an agent directory with an agent.yaml file.'));
-    console.log('');
-    process.exit(1);
-  }
-  
-  const validation = validateManifest(manifest);
-  if (!validation.valid) {
-    console.log(chalk.red('  Validation errors:'));
-    for (const err of validation.errors) {
-      console.log(chalk.red(`    • ${err}`));
-    }
-    console.log('');
-    process.exit(1);
-  }
+  // Read and validate manifest (shared helper)
+  const manifest = readAndValidateManifest(sourceDir);
   
   const spinner = ora({
     text: `Packing ${chalk.bold(manifest.name)} v${manifest.version}...`,

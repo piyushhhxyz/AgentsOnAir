@@ -1,0 +1,19 @@
+name: demo-agent
+version: 1.0.0
+description: A default AI agent
+author: ubuntu
+agent:
+  system_prompt: You are a helpful AI assistant. Answer questions clearly and concisely.
+  model:
+    provider: openai
+    name: gpt-4o-mini
+    temperature: 0.7
+    max_tokens: 2048
+  tools: []
+  knowledge: []
+metadata:
+  category: general
+  tags:
+    - general
+    - assistant
+  license: MIT

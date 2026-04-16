@@ -8,17 +8,11 @@ const { execSync } = require('child_process');
 let passed = 0;
 let failed = 0;
 let total = 0;
-const asyncTests = [];
 
 function test(name, fn) {
   total++;
   try {
-    const result = fn();
-    if (result && typeof result.then === 'function') {
-      // Async test — queue it
-      asyncTests.push({ name, promise: result });
-      return;
-    }
+    fn();
     passed++;
     console.log(`  \x1b[32m✓\x1b[0m ${name}`);
   } catch (err) {
@@ -46,7 +40,8 @@ process.env.HOME = tmpDir;
 
 // Require modules after setting HOME
 const { parseAgentId, ensureDirs, listInstalledAgents } = require('../src/utils/fs');
-const { readManifest, writeManifest, packAgent, unpackAgent, inspectAgent, validateManifest } = require('../src/utils/agent-file');
+const { readManifest, readAndValidateManifest, writeManifest, packAgent, unpackAgent, inspectAgent, validateManifest } = require('../src/utils/agent-file');
+const { sanitizeManifestField } = require('../src/utils/validate');
 
 const cliPath = path.join(__dirname, '..', 'src', 'cli.js');
 
@@ -128,6 +123,37 @@ async function runAllTests() {
     assert(result.errors.includes('Missing required field: agent.system_prompt'));
   });
 
+  // ─── sanitizeManifestField ───
+  console.log('\n  \x1b[36msanitizeManifestField\x1b[0m');
+
+  test('passes through a clean name', () => {
+    assertEqual(sanitizeManifestField('piyush'), 'piyush');
+  });
+
+  test('strips path traversal sequences', () => {
+    const result = sanitizeManifestField('../../outside');
+    assert(!result.includes('..'), 'Should not contain ".."');
+    assert(!result.includes('/'), 'Should not contain "/"');
+    assertEqual(result, 'outside');
+  });
+
+  test('strips backslash path separators', () => {
+    const result = sanitizeManifestField('..\\..\\outside');
+    assert(!result.includes('\\'), 'Should not contain backslash');
+    assert(!result.includes('..'), 'Should not contain ".."');
+  });
+
+  test('returns _unknown for empty/null input', () => {
+    assertEqual(sanitizeManifestField(''), '_unknown');
+    assertEqual(sanitizeManifestField(null), '_unknown');
+    assertEqual(sanitizeManifestField(undefined), '_unknown');
+  });
+
+  test('handles leading dots', () => {
+    const result = sanitizeManifestField('...hidden');
+    assert(!result.startsWith('.'), 'Should not start with dots');
+  });
+
   // ─── readManifest / writeManifest ───
   console.log('\n  \x1b[36mreadManifest / writeManifest\x1b[0m');
 
@@ -180,7 +206,8 @@ async function runAllTests() {
 
   const agentFilePath = path.join(tmpDir, 'test-agent-1.0.0.agent');
 
-  // Pack — must await since it's async
+  // Pack — must await since it's async (handled manually outside test())
+  total++;
   try {
     const result = await packAgent(testAgentDir, agentFilePath);
     assert(fs.existsSync(agentFilePath), '.agent file should exist');
@@ -188,12 +215,10 @@ async function runAllTests() {
     assertEqual(result.manifest.name, 'test-agent');
     passed++;
     console.log(`  \x1b[32m✓\x1b[0m packAgent creates .agent file`);
-    total++;
   } catch (err) {
     failed++;
     console.log(`  \x1b[31m✗\x1b[0m packAgent creates .agent file`);
     console.log(`    ${err.message}`);
-    total++;
   }
 
   test('inspectAgent reads .agent file metadata', () => {

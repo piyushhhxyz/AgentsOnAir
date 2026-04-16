@@ -1,10 +1,9 @@
 const chalk = require('chalk');
-const { ensureDirs, listRegistryAgents, listInstalledAgents } = require('../utils/fs');
+const { listRegistryAgents, listInstalledAgents } = require('../utils/fs');
 const { AGENTBOX_HOME, REGISTRY_DIR, INSTALLED_DIR } = require('../utils/constants');
 
 async function registry() {
   console.log('');
-  ensureDirs();
   
   const registryAgents = listRegistryAgents();
   const installedAgents = listInstalledAgents();

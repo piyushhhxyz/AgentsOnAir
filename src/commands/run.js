@@ -4,10 +4,11 @@ const chalk = require('chalk');
 const readline = require('readline');
 const { listInstalledAgents, parseAgentId } = require('../utils/fs');
 const { readManifest } = require('../utils/agent-file');
-const { INSTALLED_DIR } = require('../utils/constants');
 
 /**
- * Find an installed agent by name
+ * Find an installed agent by name.
+ * When a scope is provided (e.g. @user/agent), the manifest's author must
+ * match, so `@aaa/foo` and `@zzz/foo` are correctly distinguished.
  */
 function findAgent(name) {
   const { scope, name: agentName } = parseAgentId(name);
@@ -16,23 +17,15 @@ function findAgent(name) {
   for (const agentDir of agents) {
     try {
       const manifest = readManifest(agentDir);
-      if (manifest.name === agentName || manifest.name === name) {
-        return { dir: agentDir, manifest };
-      }
+      const nameMatches = manifest.name === agentName || manifest.name === name;
+      if (!nameMatches) continue;
+
+      // When a scope is requested, verify the manifest author matches
+      if (scope && manifest.author !== scope) continue;
+
+      return { dir: agentDir, manifest };
     } catch (e) {
       // skip invalid agents
-    }
-  }
-  
-  // Also check by directory name
-  const possiblePaths = [
-    path.join(INSTALLED_DIR, name),
-    scope ? path.join(INSTALLED_DIR, scope, agentName) : null,
-  ].filter(Boolean);
-  
-  for (const p of possiblePaths) {
-    if (fs.existsSync(path.join(p, 'agent.yaml'))) {
-      return { dir: p, manifest: readManifest(p) };
     }
   }
   
@@ -42,7 +35,7 @@ function findAgent(name) {
 /**
  * Load knowledge files content
  */
-function loadKnowledge(agentDir, manifest) {
+function loadKnowledge(agentDir) {
   const knowledgeDir = path.join(agentDir, 'knowledge');
   const knowledgeContent = [];
   
@@ -76,6 +69,9 @@ function buildSystemPrompt(manifest, knowledge) {
   
   return prompt;
 }
+
+// Supported remote providers — only OpenAI has a real implementation today
+const SUPPORTED_PROVIDERS = new Set(['openai']);
 
 /**
  * Run agent with OpenAI API
@@ -111,9 +107,10 @@ function runLocal(manifest, systemPrompt, userMessage) {
   const name = manifest.name;
   const category = manifest.metadata?.category || 'general';
   
-  // Simulate intelligent responses based on the agent's system prompt and category
+  // Simulate intelligent responses based on the agent's category.
+  // Each category maps to a single demo response string.
   const responses = {
-    research: [
+    research:
       `Based on my deep-dive into "${userMessage}", here are the key findings:\n\n` +
       `## Overview\n` +
       `This is a rapidly evolving space with several key dimensions worth examining.\n\n` +
@@ -127,8 +124,7 @@ function runLocal(manifest, systemPrompt, userMessage) {
       `- Watch for standardization efforts — they'll shape the next wave\n` +
       `- Confidence: High for market trends, Medium for specific predictions\n\n` +
       `_[${name} — research agent, powered by agentbox]_`,
-    ],
-    coding: [
+    coding:
       `Here's my code review analysis for "${userMessage}":\n\n` +
       `**Quality Score: 7/10**\n\n` +
       `Issues found:\n` +
@@ -136,8 +132,7 @@ function runLocal(manifest, systemPrompt, userMessage) {
       `- The function could benefit from input validation\n` +
       `- Good use of patterns, but watch for potential memory leaks\n\n` +
       `_[${name} — coding agent, powered by agentbox]_`,
-    ],
-    writing: [
+    writing:
       `Here's what I've crafted for "${userMessage}":\n\n` +
       `**Option A (Direct — 47 words):**\n` +
       `Hey — saw your team just shipped [recent launch]. Impressive velocity.\n` +
@@ -147,8 +142,7 @@ function runLocal(manifest, systemPrompt, userMessage) {
       `Happy to share the playbook — no strings. Reply "sure" and I'll send it over.\n\n` +
       `**Subject lines:** "Quick question about [company]" | "Saw your launch — one idea"\n\n` +
       `_[${name} — outreach agent, powered by agentbox]_`,
-    ],
-    finance: [
+    finance:
       `Great question about "${userMessage}"! Here's what you should know:\n\n` +
       `## Key Deductions & Strategies\n` +
       `- **Home Office**: $5/sq ft simplified method, up to 300 sq ft ($1,500 max)\n` +
@@ -162,8 +156,7 @@ function runLocal(manifest, systemPrompt, userMessage) {
       `- Keep receipts for everything — the IRS requires documentation\n\n` +
       `*Disclaimer: Consult a licensed CPA for your specific situation.*\n\n` +
       `_[${name} — tax agent, powered by agentbox]_`,
-    ],
-    general: [
+    general:
       `Here's my analysis of "${userMessage}":\n\n` +
       `I've looked at this from multiple angles:\n` +
       `- The core question has several important dimensions\n` +
@@ -171,11 +164,9 @@ function runLocal(manifest, systemPrompt, userMessage) {
       `- I'd recommend starting with the simplest path forward\n\n` +
       `Let me know if you'd like me to dive deeper into any specific aspect.\n\n` +
       `_[${name} — powered by agentbox]_`,
-    ],
   };
   
-  const categoryResponses = responses[category] || responses.general;
-  return categoryResponses[Math.floor(Math.random() * categoryResponses.length)];
+  return responses[category] || responses.general;
 }
 
 async function run(name, options) {
@@ -196,12 +187,22 @@ async function run(name, options) {
   }
   
   const { dir: agentDir, manifest } = agent;
-  const knowledge = loadKnowledge(agentDir, manifest);
+  const knowledge = loadKnowledge(agentDir);
   const systemPrompt = buildSystemPrompt(manifest, knowledge);
   
   // Determine provider
   const provider = options.provider || manifest.agent.model?.provider || 'openai';
   const hasApiKey = !!process.env.OPENAI_API_KEY;
+
+  // Reject unsupported remote providers early instead of silently falling
+  // through to the OpenAI client.
+  if (provider !== 'local' && !SUPPORTED_PROVIDERS.has(provider)) {
+    console.log(chalk.red(`  Error: Provider "${provider}" is not yet supported.`));
+    console.log(chalk.dim(`  Supported providers: ${[...SUPPORTED_PROVIDERS].join(', ')}, local`));
+    console.log('');
+    process.exit(1);
+  }
+
   const useLocal = provider === 'local' || (!hasApiKey && provider === 'openai');
   
   // Print agent info
@@ -214,7 +215,6 @@ async function run(name, options) {
   if (useLocal && provider !== 'local') {
     console.log(chalk.yellow('  ⚠ No OPENAI_API_KEY found. Running in local demo mode.'));
     console.log(chalk.dim('    Set OPENAI_API_KEY to use the full LLM-powered agent.'));
-    console.log(chalk.dim('    Or use: agentbox run ' + name + ' --provider ollama'));
     console.log('');
   }
   

@@ -3,6 +3,7 @@ const path = require('path');
 const yaml = require('js-yaml');
 const archiver = require('archiver');
 const AdmZip = require('adm-zip');
+const chalk = require('chalk');
 const { AGENT_MANIFEST, AGENT_EXT } = require('./constants');
 
 /**
@@ -15,6 +16,34 @@ function readManifest(dir) {
   }
   const content = fs.readFileSync(manifestPath, 'utf-8');
   return yaml.load(content);
+}
+
+/**
+ * Read, parse, and validate an agent.yaml manifest from a directory.
+ * Exits the process with user-friendly errors on failure.
+ */
+function readAndValidateManifest(sourceDir) {
+  let manifest;
+  try {
+    manifest = readManifest(sourceDir);
+  } catch (err) {
+    console.log(chalk.red(`  Error: ${err.message}`));
+    console.log(chalk.dim('  Make sure you\'re in an agent directory with an agent.yaml file.'));
+    console.log('');
+    process.exit(1);
+  }
+
+  const validation = validateManifest(manifest);
+  if (!validation.valid) {
+    console.log(chalk.red('  Validation errors:'));
+    for (const err of validation.errors) {
+      console.log(chalk.red(`    • ${err}`));
+    }
+    console.log('');
+    process.exit(1);
+  }
+
+  return manifest;
 }
 
 /**
@@ -79,10 +108,8 @@ function packAgent(sourceDir, outputPath) {
 function unpackAgent(agentFilePath, targetDir) {
   const zip = new AdmZip(agentFilePath);
   
-  // Extract to target
-  if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir, { recursive: true });
-  }
+  // recursive: true is a no-op if the directory already exists
+  fs.mkdirSync(targetDir, { recursive: true });
   zip.extractAllTo(targetDir, true);
   
   // Read and return manifest
@@ -104,15 +131,14 @@ function inspectAgent(agentFilePath) {
   
   const manifest = yaml.load(manifestEntry.getData().toString('utf-8'));
   
-  // Collect file listing
-  const files = entries.map(e => ({
-    name: e.entryName,
-    size: e.header.size,
-    compressed: e.header.compressedSize,
-  }));
-  
-  const totalSize = entries.reduce((sum, e) => sum + e.header.size, 0);
-  const compressedSize = entries.reduce((sum, e) => sum + e.header.compressedSize, 0);
+  // Build file listing, totalSize, and compressedSize in a single pass
+  let totalSize = 0;
+  let compressedSize = 0;
+  const files = entries.map(e => {
+    totalSize += e.header.size;
+    compressedSize += e.header.compressedSize;
+    return { name: e.entryName, size: e.header.size, compressed: e.header.compressedSize };
+  });
   
   return { manifest, files, totalSize, compressedSize };
 }
@@ -135,6 +161,7 @@ function validateManifest(manifest) {
 
 module.exports = {
   readManifest,
+  readAndValidateManifest,
   writeManifest,
   packAgent,
   unpackAgent,

@@ -9,38 +9,38 @@ async function inspect(file) {
   
   try {
     const info = inspectAgent(filePath);
-    const m = info.manifest;
+    const manifest = info.manifest;
     
     console.log(chalk.bold('  🔍 Agent Inspection'));
     console.log(chalk.dim('  ─────────────────────────────────────────'));
     console.log('');
-    console.log(`  ${chalk.dim('Name:')}        ${chalk.bold(m.name)}`);
-    console.log(`  ${chalk.dim('Version:')}     ${m.version}`);
-    console.log(`  ${chalk.dim('Author:')}      ${m.author || 'unknown'}`);
-    console.log(`  ${chalk.dim('Description:')} ${m.description || 'none'}`);
-    console.log(`  ${chalk.dim('Category:')}    ${m.metadata?.category || 'general'}`);
-    console.log(`  ${chalk.dim('Tags:')}        ${(m.metadata?.tags || []).join(', ') || 'none'}`);
-    console.log(`  ${chalk.dim('License:')}     ${m.metadata?.license || 'none'}`);
+    console.log(`  ${chalk.dim('Name:')}        ${chalk.bold(manifest.name)}`);
+    console.log(`  ${chalk.dim('Version:')}     ${manifest.version}`);
+    console.log(`  ${chalk.dim('Author:')}      ${manifest.author || 'unknown'}`);
+    console.log(`  ${chalk.dim('Description:')} ${manifest.description || 'none'}`);
+    console.log(`  ${chalk.dim('Category:')}    ${manifest.metadata?.category || 'general'}`);
+    console.log(`  ${chalk.dim('Tags:')}        ${(manifest.metadata?.tags || []).join(', ') || 'none'}`);
+    console.log(`  ${chalk.dim('License:')}     ${manifest.metadata?.license || 'none'}`);
     console.log('');
     
     // Model info
-    if (m.agent?.model) {
+    if (manifest.agent?.model) {
       console.log(chalk.bold('  Model Configuration'));
-      console.log(`  ${chalk.dim('Provider:')}    ${m.agent.model.provider || 'openai'}`);
-      console.log(`  ${chalk.dim('Model:')}       ${m.agent.model.name || 'gpt-4o-mini'}`);
-      console.log(`  ${chalk.dim('Temperature:')} ${m.agent.model.temperature ?? 0.7}`);
-      console.log(`  ${chalk.dim('Max Tokens:')}  ${m.agent.model.max_tokens ?? 2048}`);
+      console.log(`  ${chalk.dim('Provider:')}    ${manifest.agent.model.provider || 'openai'}`);
+      console.log(`  ${chalk.dim('Model:')}       ${manifest.agent.model.name || 'gpt-4o-mini'}`);
+      console.log(`  ${chalk.dim('Temperature:')} ${manifest.agent.model.temperature ?? 0.7}`);
+      console.log(`  ${chalk.dim('Max Tokens:')}  ${manifest.agent.model.max_tokens ?? 2048}`);
       console.log('');
     }
     
     // System prompt preview
-    if (m.agent?.system_prompt) {
+    if (manifest.agent?.system_prompt) {
       console.log(chalk.bold('  System Prompt'));
-      const lines = m.agent.system_prompt.split('\n').slice(0, 5);
+      const lines = manifest.agent.system_prompt.split('\n').slice(0, 5);
       for (const line of lines) {
         console.log(`  ${chalk.dim('│')} ${line}`);
       }
-      if (m.agent.system_prompt.split('\n').length > 5) {
+      if (manifest.agent.system_prompt.split('\n').length > 5) {
         console.log(`  ${chalk.dim('│ ...(truncated)')}`);
       }
       console.log('');

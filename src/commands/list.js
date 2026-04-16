@@ -1,9 +1,6 @@
-const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
-const yaml = require('js-yaml');
-const AdmZip = require('adm-zip');
-const { ensureDirs, listRegistryAgents, listInstalledAgents } = require('../utils/fs');
+const { listRegistryAgents, listInstalledAgents } = require('../utils/fs');
 const { readManifest, inspectAgent } = require('../utils/agent-file');
 
 const CATEGORY_ICONS = {
@@ -17,7 +14,6 @@ const CATEGORY_ICONS = {
 
 async function list(options) {
   console.log('');
-  ensureDirs();
   
   if (options.installed) {
     return listInstalled();
@@ -47,16 +43,16 @@ function listRegistry() {
   for (const agentFile of agentFiles) {
     try {
       const info = inspectAgent(agentFile);
-      const m = info.manifest;
-      const icon = CATEGORY_ICONS[m.metadata?.category] || '🤖';
+      const manifest = info.manifest;
+      const icon = CATEGORY_ICONS[manifest.metadata?.category] || '🤖';
       const sizeKB = (info.compressedSize / 1024).toFixed(1);
-      const author = m.author || 'unknown';
+      const author = manifest.author || 'unknown';
       
-      console.log(`  ${icon} ${chalk.bold(`@${author}/${m.name}`)} ${chalk.dim(`v${m.version}`)} ${chalk.dim(`(${sizeKB} KB)`)}`);
-      console.log(`    ${chalk.dim(m.description || 'No description')}`);
+      console.log(`  ${icon} ${chalk.bold(`@${author}/${manifest.name}`)} ${chalk.dim(`v${manifest.version}`)} ${chalk.dim(`(${sizeKB} KB)`)}`);
+      console.log(`    ${chalk.dim(manifest.description || 'No description')}`);
       
-      if (m.metadata?.tags?.length) {
-        const tags = m.metadata.tags.map(t => chalk.dim(`#${t}`)).join(' ');
+      if (manifest.metadata?.tags?.length) {
+        const tags = manifest.metadata.tags.map(t => chalk.dim(`#${t}`)).join(' ');
         console.log(`    ${tags}`);
       }
       console.log('');
@@ -88,12 +84,12 @@ function listInstalled() {
   
   for (const agentDir of agentDirs) {
     try {
-      const m = readManifest(agentDir);
-      const icon = CATEGORY_ICONS[m.metadata?.category] || '🤖';
+      const manifest = readManifest(agentDir);
+      const icon = CATEGORY_ICONS[manifest.metadata?.category] || '🤖';
       
-      console.log(`  ${icon} ${chalk.bold(m.name)} ${chalk.dim(`v${m.version}`)}`);
-      console.log(`    ${chalk.dim(m.description || 'No description')}`);
-      console.log(`    ${chalk.dim('Run:')} ${chalk.cyan(`agentbox run ${m.name}`)}`);
+      console.log(`  ${icon} ${chalk.bold(manifest.name)} ${chalk.dim(`v${manifest.version}`)}`);
+      console.log(`    ${chalk.dim(manifest.description || 'No description')}`);
+      console.log(`    ${chalk.dim('Run:')} ${chalk.cyan(`agentbox run ${manifest.name}`)}`);
       console.log('');
     } catch (e) {
       console.log(`  ${chalk.dim('?')} ${chalk.dim(path.basename(agentDir))} ${chalk.red('(invalid)')}`);
