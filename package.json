@@ -1,6 +1,6 @@
 {
   "name": "brewagent",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The npm for AI agents. Pack, share, install, and run AI agents with one command.",
   "main": "src/index.js",
   "bin": {
