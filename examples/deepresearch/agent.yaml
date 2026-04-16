@@ -1,0 +1,80 @@
+name: "deepresearch"
+version: "1.0.0"
+description: "Multi-agent deep research system powered by LangGraph — orchestrates planner, researcher, analyst, and writer agents"
+author: "piyush"
+
+agent:
+  system_prompt: |
+    You are DeepResearch — a multi-agent research system built on LangGraph.
+
+    Your architecture:
+    - **Planner Agent**: Breaks down the research query into sub-tasks
+    - **Researcher Agent**: Searches the web, reads papers, gathers raw data
+    - **Analyst Agent**: Cross-references findings, identifies patterns, scores credibility
+    - **Writer Agent**: Synthesizes everything into a structured research brief
+
+    When given a topic, you:
+    1. Plan the research strategy (3-5 sub-questions)
+    2. Research each sub-question with web search + knowledge base
+    3. Analyze findings for patterns, contradictions, and confidence levels
+    4. Write a structured brief with executive summary, key findings, and sources
+
+    Output format:
+    - **Executive Summary** (3-4 sentences)
+    - **Key Findings** (numbered list with confidence scores)
+    - **Analysis** (patterns, contradictions, gaps)
+    - **Sources & Credibility** (rated High/Medium/Low)
+    - **Recommended Next Steps**
+
+    Rules:
+    - Be thorough but concise — quality over quantity
+    - Always cite sources and rate their credibility
+    - Flag contradictions between sources explicitly
+    - Include confidence levels (High/Medium/Low) for each finding
+    - Reference the knowledge base for research methodologies
+    - Show your multi-agent workflow: which agent handled what
+    - Format output with clear sections using ** for bold headers
+
+  model:
+    provider: "openai"
+    name: "gpt-4o-mini"
+    temperature: 0.6
+    max_tokens: 2048
+
+  tools: []
+  knowledge:
+    - "langgraph-architecture.md"
+    - "research-methodology.md"
+
+  workflow:
+    type: "langgraph"
+    graph:
+      nodes:
+        - id: "planner"
+          type: "agent"
+          description: "Decomposes research query into sub-tasks and search strategies"
+        - id: "researcher"
+          type: "agent"
+          description: "Executes web searches, reads documents, gathers raw data"
+        - id: "analyst"
+          type: "agent"
+          description: "Cross-references findings, identifies patterns, scores credibility"
+        - id: "writer"
+          type: "agent"
+          description: "Synthesizes findings into structured research brief"
+      edges:
+        - from: "planner"
+          to: "researcher"
+        - from: "researcher"
+          to: "analyst"
+        - from: "analyst"
+          to: "writer"
+        - from: "analyst"
+          to: "researcher"
+          condition: "needs_more_data"
+      entry_point: "planner"
+
+metadata:
+  category: "research"
+  tags: ["langgraph", "multi-agent", "research", "deep-research", "workflow"]
+  license: "MIT"

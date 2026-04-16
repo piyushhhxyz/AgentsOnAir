@@ -167,6 +167,19 @@ async function showThinking(thought, durationMs = 800) {
   await sleep(durationMs);
 }
 
+/**
+ * Show an agent handoff — visually shows one agent passing control to another
+ */
+async function showAgentHandoff(fromAgent, toAgent, reason) {
+  if (!process.stdout.isTTY) {
+    console.log(`  ${chalk.blue('→')} ${chalk.dim(fromAgent)} → ${chalk.bold(toAgent)} ${chalk.dim(`(${reason})`)}`);
+    return;
+  }
+
+  console.log(`  ${chalk.blue('→')} ${chalk.dim(fromAgent)} ${chalk.blue('→')} ${chalk.bold.blue(toAgent)} ${chalk.dim(`(${reason})`)}`);
+  await sleep(400);
+}
+
 // ─── Agentic Step Sequences (per agent category) ───
 
 /**
@@ -234,6 +247,41 @@ function getAgenticSteps(manifest, userMessage) {
     ];
   }
 
+  // deepresearch: multi-agent LangGraph workflow with agent handoffs
+  // (must be checked before research-assistant since messages may contain "research")
+  if ((name === 'deepresearch') || (manifest.agent?.workflow?.type === 'langgraph')) {
+    const query = userMessage.slice(0, 50);
+    return [
+      { type: 'step', icon: '◆', text: 'LangGraph workflow initialized — 4 agents loaded' },
+      { type: 'handoff', from: 'orchestrator', to: 'planner', reason: 'decompose query' },
+      { type: 'thinking', text: 'Breaking down research query into sub-tasks...' },
+      { type: 'tool', name: 'planner.decompose', args: `"${query}..."`, result: '4 sub-questions generated, priorities assigned', duration: 1200 },
+      { type: 'tool', name: 'planner.strategy', args: '"search_plan"', result: 'Web search + knowledge base + cross-reference strategy', duration: 800 },
+      { type: 'step', icon: '✓', text: 'Research plan ready — 4 sub-tasks queued' },
+      { type: 'handoff', from: 'planner', to: 'researcher', reason: 'execute searches' },
+      { type: 'tool', name: 'researcher.web_search', args: `"${query}..."`, result: '14 sources found, 8 high-relevance', duration: 1800 },
+      { type: 'tool', name: 'researcher.extract', args: '"top 8 sources"', result: '23 key findings extracted', duration: 1400 },
+      { type: 'tool', name: 'researcher.web_search', args: '"market size + trends"', result: '6 industry reports found', duration: 1200 },
+      { type: 'tool', name: 'knowledge.search', args: '"research-methodology.md"', result: 'Cross-reference protocol loaded', duration: 600 },
+      { type: 'step', icon: '✓', text: 'Raw research complete — 29 findings collected' },
+      { type: 'handoff', from: 'researcher', to: 'analyst', reason: 'cross-reference findings' },
+      { type: 'thinking', text: 'Cross-referencing 29 findings across 14 sources...' },
+      { type: 'tool', name: 'analyst.cross_reference', args: '"all_findings"', result: '18 confirmed, 4 contradictions, 3 gaps detected', duration: 1600 },
+      { type: 'tool', name: 'analyst.score_credibility', args: '"14 sources"', result: '6 High, 5 Medium, 3 Low credibility', duration: 1000 },
+      { type: 'thinking', text: 'Gaps detected — routing back to researcher for additional data...' },
+      { type: 'handoff', from: 'analyst', to: 'researcher', reason: 'fill 3 knowledge gaps' },
+      { type: 'tool', name: 'researcher.web_search', args: '"gap: competitive landscape"', result: '4 additional sources found', duration: 1200 },
+      { type: 'tool', name: 'researcher.extract', args: '"gap sources"', result: '7 new findings extracted', duration: 900 },
+      { type: 'handoff', from: 'researcher', to: 'analyst', reason: 're-analyze with new data' },
+      { type: 'tool', name: 'analyst.merge_findings', args: '"36 total findings"', result: '24 confirmed, 2 contradictions remaining', duration: 1000 },
+      { type: 'tool', name: 'analyst.confidence_score', args: '"final"', result: 'Overall confidence: 0.84 (High)', duration: 600 },
+      { type: 'step', icon: '✓', text: 'Analysis complete — confidence 0.84' },
+      { type: 'handoff', from: 'analyst', to: 'writer', reason: 'synthesize brief' },
+      { type: 'thinking', text: 'Synthesizing 24 findings into structured research brief...' },
+      { type: 'step', icon: '✓', text: 'Research brief ready — generating output' },
+    ];
+  }
+
   // research-assistant: web search, extract data, cross-reference
   if ((name === 'research-assistant') || (msg.includes('research') || msg.includes('analyze') || msg.includes('find'))) {
     return [
@@ -273,6 +321,9 @@ async function runAgenticSteps(manifest, userMessage) {
         break;
       case 'step':
         await showStep(step.icon, step.text, step.duration || 400);
+        break;
+      case 'handoff':
+        await showAgentHandoff(step.from, step.to, step.reason);
         break;
     }
   }
