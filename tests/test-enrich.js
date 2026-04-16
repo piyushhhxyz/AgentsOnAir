@@ -2,42 +2,13 @@
 // Tests for enriched example agents, init starter knowledge, and runLocal knowledge references
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { execSync } = require('child_process');
+const { createTestEnv, createTestRunner } = require('./helpers');
 
-let passed = 0;
-let failed = 0;
-let total = 0;
-
-function test(name, fn) {
-  total++;
-  try {
-    fn();
-    passed++;
-    console.log(`  \x1b[32m✓\x1b[0m ${name}`);
-  } catch (err) {
-    failed++;
-    console.log(`  \x1b[31m✗\x1b[0m ${name}`);
-    console.log(`    ${err.message}`);
-  }
-}
-
-function assert(condition, msg) {
-  if (!condition) throw new Error(msg || 'Assertion failed');
-}
-
-function assertEqual(a, b, msg) {
-  if (a !== b) throw new Error(msg || `Expected "${b}", got "${a}"`);
-}
-
-const tmpDir = path.join(os.tmpdir(), 'agentbox-enrich-test-' + Date.now());
-const origHome = process.env.HOME;
-fs.mkdirSync(tmpDir, { recursive: true });
-process.env.HOME = tmpDir;
+const { tmpDir, cliPath, rootDir, cleanup } = createTestEnv('enrich-test');
+const { test, assert, assertEqual, printSummary } = createTestRunner();
 
 const yaml = require('js-yaml');
-const cliPath = path.join(__dirname, '..', 'src', 'cli.js');
-const rootDir = path.join(__dirname, '..');
 
 async function runAllTests() {
   console.log('\n\x1b[1m  agentbox enrich tests\x1b[0m\n');
@@ -181,64 +152,61 @@ async function runAllTests() {
     assertEqual(manifest.agent.knowledge.length, 0, 'Default manifest should have empty knowledge array');
   });
 
-  // ─── Task 4: runLocal knowledge references ───
+  // ─── Task 4: runLocal knowledge references (functional tests) ───
+  // These tests exercise runLocal behavior by installing an agent with
+  // knowledge and running it via the CLI in local/demo mode.
   console.log('\n  \x1b[36mrunLocal knowledge references\x1b[0m');
 
-  // We can test runLocal directly by requiring run.js internals
-  // Since runLocal is not exported, we test it indirectly via the module's behavior
-  // But we can load the function from the file using a small trick
-  
-  // Load the runLocal function by evaluating the module's source
-  const runSrc = fs.readFileSync(path.join(rootDir, 'src', 'commands', 'run.js'), 'utf-8');
+  test('run in local mode includes knowledge references in output', () => {
+    // Init, add knowledge, pack, install, run
+    const workDir = path.join(tmpDir, 'run-knowledge');
+    fs.mkdirSync(workDir, { recursive: true });
+    execSync(`node ${cliPath} init knowledge-agent --template research`, { cwd: workDir, encoding: 'utf-8' });
 
-  test('runLocal function accepts knowledge parameter', () => {
-    // Check the function signature in source
-    assert(runSrc.includes('function runLocal(manifest, systemPrompt, userMessage, knowledge)'),
-      'runLocal should accept knowledge as 4th parameter');
+    // Add a real knowledge file
+    const kDir = path.join(workDir, 'knowledge-agent', 'knowledge');
+    fs.writeFileSync(path.join(kDir, 'test-data.md'), '# Test Data\nSome research facts here.\nAnother line of content.');
+
+    // Pack
+    execSync(`node ${cliPath} pack knowledge-agent`, { cwd: workDir, encoding: 'utf-8' });
+    const agentFile = path.join(workDir, 'knowledge-agent-1.0.0.agent');
+    assert(fs.existsSync(agentFile), '.agent file should exist');
+
+    // Install
+    execSync(`node ${cliPath} install ${agentFile}`, { encoding: 'utf-8' });
+
+    // Run with a message (local mode — no OPENAI_API_KEY)
+    const output = execSync(
+      `node ${cliPath} run knowledge-agent -m "Tell me about AI"`,
+      { encoding: 'utf-8', env: { ...process.env, OPENAI_API_KEY: '' } }
+    );
+    assert(output.includes('📚'), 'Output should include knowledge reference emoji');
+    assert(output.includes('Sources referenced'), 'Output should include sources referenced');
   });
 
-  test('runLocal builds knowledge reference when knowledge is provided', () => {
-    assert(runSrc.includes('📚 **Sources referenced:**'), 'Should include sources referenced output');
-    assert(runSrc.includes('📚 **From knowledge base'), 'Should include knowledge base snippet');
+  test('run in local mode without knowledge does not show knowledge section', () => {
+    // Init with default template (no knowledge)
+    const workDir = path.join(tmpDir, 'run-no-knowledge');
+    fs.mkdirSync(workDir, { recursive: true });
+    execSync(`node ${cliPath} init plain-agent`, { cwd: workDir, encoding: 'utf-8' });
+
+    // Pack
+    execSync(`node ${cliPath} pack plain-agent`, { cwd: workDir, encoding: 'utf-8' });
+    const agentFile = path.join(workDir, 'plain-agent-1.0.0.agent');
+
+    // Install
+    execSync(`node ${cliPath} install ${agentFile}`, { encoding: 'utf-8' });
+
+    // Run with a message (local mode)
+    const output = execSync(
+      `node ${cliPath} run plain-agent -m "Hello"`,
+      { encoding: 'utf-8', env: { ...process.env, OPENAI_API_KEY: '' } }
+    );
+    assert(!output.includes('Sources referenced'), 'Output should NOT include sources referenced when no knowledge');
   });
 
-  test('runLocal call sites pass knowledge argument', () => {
-    // Check all call sites pass knowledge
-    const callSites = runSrc.match(/runLocal\(manifest,\s*systemPrompt,\s*\S+,\s*knowledge\)/g);
-    assert(callSites && callSites.length >= 3, 
-      `Expected at least 3 runLocal calls with knowledge, found ${callSites ? callSites.length : 0}`);
-  });
-
-  test('runLocal appends knowledgeRef to each category response', () => {
-    // Check that knowledgeRef is appended to each category's response
-    const categories = ['research', 'coding', 'writing', 'finance', 'general'];
-    for (const cat of categories) {
-      // Each response should end with knowledgeRef + footer
-      assert(runSrc.includes(`knowledgeRef +\n      \`\\n\\n_[\${name}`),
-        `${cat} response should append knowledgeRef before footer`);
-    }
-  });
-
-  test('runLocal handles no knowledge gracefully', () => {
-    // Verify the function checks for null/empty knowledge
-    assert(runSrc.includes("if (knowledge && knowledge.length > 0)"),
-      'Should guard against null/empty knowledge');
-  });
-
-  // ─── Summary ───
-  console.log('\n  ─────────────────────────────────');
-  console.log(`  ${passed} passing, ${failed} failing, ${total} total`);
-
-  if (failed > 0) {
-    console.log('\x1b[31m  TESTS FAILED\x1b[0m\n');
-    process.exit(1);
-  } else {
-    console.log('\x1b[32m  ALL TESTS PASSED\x1b[0m\n');
-  }
-
-  // Cleanup
-  process.env.HOME = origHome;
-  try { fs.rmSync(tmpDir, { recursive: true }); } catch (e) {}
+  printSummary();
+  cleanup();
 }
 
 runAllTests().catch(err => {

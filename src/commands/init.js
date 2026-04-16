@@ -3,7 +3,9 @@ const path = require('path');
 const chalk = require('chalk');
 const yaml = require('js-yaml');
 
-// Templates for different agent types
+// Templates for different agent types.
+// Each may optionally include a `starterKnowledge` array of { filename, content }
+// to seed the knowledge/ directory on init.
 const TEMPLATES = {
   default: {
     system_prompt: 'You are a helpful AI assistant. Answer questions clearly and concisely.',
@@ -21,6 +23,23 @@ const TEMPLATES = {
 Always be thorough but concise. Use bullet points and headers for clarity.`,
     category: 'research',
     tags: ['research', 'analysis', 'deep-dive'],
+    starterKnowledge: [{
+      filename: 'getting-started.md',
+      content: `# Research Knowledge Base
+
+Add your research materials here. The agent will use these as context when answering questions.
+
+## How to use
+- Add markdown files with facts, data, and analysis
+- The agent automatically includes all files in this directory as context
+- More specific knowledge = better, more accurate responses
+
+## Example topics to research
+- Market analysis and competitive landscapes
+- Technology trends and adoption patterns
+- Industry reports and data points
+`,
+    }],
   },
   'code-review': {
     system_prompt: `You are an expert code reviewer. When given code:
@@ -45,6 +64,20 @@ Be constructive and specific. Always explain WHY something is an issue.`,
 Tone: Professional but human. Never sound like a template.`,
     category: 'writing',
     tags: ['outreach', 'sales', 'email', 'marketing'],
+    starterKnowledge: [{
+      filename: 'target-audience.md',
+      content: `# Target Audience Profile
+
+Define your target audience here. The agent uses this to personalize outreach.
+
+## Template
+- **Industry**: [e.g., SaaS, fintech, healthcare]
+- **Role**: [e.g., CTO, VP Engineering, Head of Product]
+- **Company size**: [e.g., 50-200 employees, Series A-B]
+- **Pain points**: [list 3-5 specific pain points]
+- **Your value prop**: [what you offer that solves their pain]
+`,
+    }],
   },
 };
 
@@ -89,40 +122,12 @@ async function init(name, options) {
     },
   };
   
-  // Add template-specific starter files
-  if (template === 'research') {
-    fs.writeFileSync(path.join(dir, 'knowledge', 'getting-started.md'), 
-`# Research Knowledge Base
-
-Add your research materials here. The agent will use these as context when answering questions.
-
-## How to use
-- Add markdown files with facts, data, and analysis
-- The agent automatically includes all files in this directory as context
-- More specific knowledge = better, more accurate responses
-
-## Example topics to research
-- Market analysis and competitive landscapes
-- Technology trends and adoption patterns
-- Industry reports and data points
-`);
-    manifest.agent.knowledge = ['getting-started.md'];
-  }
-
-  if (template === 'outreach') {
-    fs.writeFileSync(path.join(dir, 'knowledge', 'target-audience.md'),
-`# Target Audience Profile
-
-Define your target audience here. The agent uses this to personalize outreach.
-
-## Template
-- **Industry**: [e.g., SaaS, fintech, healthcare]
-- **Role**: [e.g., CTO, VP Engineering, Head of Product]
-- **Company size**: [e.g., 50-200 employees, Series A-B]
-- **Pain points**: [list 3-5 specific pain points]
-- **Your value prop**: [what you offer that solves their pain]
-`);
-    manifest.agent.knowledge = ['target-audience.md'];
+  // Write template-specific starter knowledge files (if any)
+  if (tmpl.starterKnowledge) {
+    for (const { filename, content } of tmpl.starterKnowledge) {
+      fs.writeFileSync(path.join(dir, 'knowledge', filename), content);
+      manifest.agent.knowledge.push(filename);
+    }
   }
 
   // Write agent.yaml
