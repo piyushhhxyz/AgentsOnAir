@@ -192,7 +192,7 @@ function getAgenticSteps(manifest, userMessage) {
   const msg = userMessage.toLowerCase();
 
   // pitchdeck-ai: fetches repo data, analyzes code, loads pitch frameworks
-  if ((name === 'pitchdeck-ai') || (category === 'research' && msg.includes('github'))) {
+  if ((name === 'pitch' || name === 'pitchdeck-ai') || (category === 'research' && msg.includes('github'))) {
     const repoUrl = userMessage.match(/https?:\/\/github\.com\/[^\s]+/)?.[0] || 'github.com/project';
     const repoName = repoUrl.split('/').slice(-2).join('/');
     return [
@@ -209,7 +209,7 @@ function getAgenticSteps(manifest, userMessage) {
   }
 
   // cleanmymac: scans directories, docker, homebrew, downloads
-  if ((name === 'cleanmymac') || (category === 'coding' && (msg.includes('scan') || msg.includes('storage') || msg.includes('clean')))) {
+  if ((name === 'cleaner' || name === 'cleanmymac') || (category === 'coding' && (msg.includes('scan') || msg.includes('storage') || msg.includes('clean')))) {
     return [
       { type: 'thinking', text: 'Initiating full system scan...' },
       { type: 'tool', name: 'system.scan_directory', args: '~/Projects/**/node_modules', result: 'found 14 directories, 8.3 GB total', duration: 1800 },
@@ -224,7 +224,7 @@ function getAgenticSteps(manifest, userMessage) {
   }
 
   // vc-outreach: researches VCs, crafts personalized fundraising emails
-  if ((name === 'vc-outreach') || (msg.includes('vc') || msg.includes('investor') || msg.includes('fundrais'))) {
+  if ((name === 'outreach' || name === 'vc-outreach') || (msg.includes('vc') || msg.includes('investor') || msg.includes('fundrais'))) {
     return [
       { type: 'thinking', text: 'Researching target investor profile and thesis...' },
       { type: 'tool', name: 'vc.research_profile', args: '"target investor"', result: 'Investment thesis loaded, 12 recent deals indexed', duration: 1400 },
@@ -252,7 +252,7 @@ function getAgenticSteps(manifest, userMessage) {
 
   // deepresearch: multi-agent LangGraph workflow with agent handoffs
   // (must be checked before research-assistant since messages may contain "research")
-  if ((name === 'deepresearch') || (manifest.agent?.workflow?.type === 'langgraph')) {
+  if ((name === 'research' || name === 'deepresearch') || (manifest.agent?.workflow?.type === 'langgraph')) {
     const query = userMessage.slice(0, 50);
     return [
       { type: 'step', icon: '◆', text: 'LangGraph workflow initialized — 4 agents loaded' },

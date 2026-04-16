@@ -69,8 +69,7 @@ function packAgent(sourceDir, outputPath) {
     
     if (!outputPath) {
       const name = manifest.name || 'agent';
-      const version = manifest.version || '1.0.0';
-      outputPath = path.join(process.cwd(), `${name}-${version}${AGENT_EXT}`);
+      outputPath = path.join(process.cwd(), `${name}${AGENT_EXT}`);
     }
     
     // Ensure parent directory exists

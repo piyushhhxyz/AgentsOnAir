@@ -73,9 +73,9 @@ async function installFromRegistry(name) {
   // (e.g. "foo" matching "foo-bar-1.0.0.agent") and respects scope.
   const allAgents = listRegistryAgents();
 
-  // Build an exact-match pattern: the basename must start with "<name>-"
-  // followed by a version and end with AGENT_EXT.
-  const exactPattern = new RegExp(`^${escapeRegex(agentName)}-[^/]+\\${AGENT_EXT}$`);
+  // Build an exact-match pattern: matches both "name.agent" (new) and
+  // "name-version.agent" (legacy) formats.
+  const exactPattern = new RegExp(`^${escapeRegex(agentName)}(-[^/]+)?\\${AGENT_EXT}$`);
 
   let agentFile = null;
 

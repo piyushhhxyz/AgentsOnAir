@@ -169,7 +169,7 @@ async function runAllTests() {
 
     // Pack
     execSync(`node ${cliPath} pack knowledge-agent`, { cwd: workDir, encoding: 'utf-8' });
-    const agentFile = path.join(workDir, 'knowledge-agent-1.0.0.agent');
+    const agentFile = path.join(workDir, 'knowledge-agent.agent');
     assert(fs.existsSync(agentFile), '.agent file should exist');
 
     // Install
@@ -192,7 +192,7 @@ async function runAllTests() {
 
     // Pack
     execSync(`node ${cliPath} pack plain-agent`, { cwd: workDir, encoding: 'utf-8' });
-    const agentFile = path.join(workDir, 'plain-agent-1.0.0.agent');
+    const agentFile = path.join(workDir, 'plain-agent.agent');
 
     // Install
     execSync(`node ${cliPath} install ${agentFile}`, { encoding: 'utf-8' });
